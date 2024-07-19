@@ -1,0 +1,74 @@
+.header {
+    font-size: 36px;
+    color: rgb(238, 238, 238);
+    font-weight: 500;
+    text-align: left;
+}
+
+.subheader {
+    font-size: 24px;
+    color: rgb(255, 255, 255);
+    text-align: left;
+    padding-left: 40px;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+
+
+.email, .password {
+    padding-block-end: 8%;
+}
+
+#email-text:hover {
+    color: blue;
+}
+
+.email-tooltip, .password-tooltip {
+    visibility: hidden;
+    width: 140px;
+    color: #ffffffad;
+    text-align: left;
+    border-radius: 6px;
+
+    margin: 5px;
+    margin-left: 40px;
+}
+
+#email-text:hover + .email-tooltip {
+    visibility: visible;
+}
+
+
+
+#password-text {
+    color: transparent;
+    text-shadow: 0 0 12px rgb(255, 255, 255);
+}
+
+#password-text:hover {
+    text-shadow: 0 0 12px rgb(30, 0, 255);
+}
+
+#password-text:hover + .password-tooltip {
+    visibility: visible;
+}
+
+#password-text:hover + .password-tooltip:hover + .password-tooltip {
+    visibility: visible;
+}
+
+
+
+#change-password {
+    padding: 15px;
+    margin: 60px auto;
+
+    display: none;
+}
+
+#password-notification {
+    margin: 40px auto;
+
+}

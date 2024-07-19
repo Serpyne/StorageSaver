@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+  <script src="{{ url_for('static', filename='js/profile.js') }}" type="text/javascript"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="email">
+
+    <h1 class="header">
+      Email
+    </h1>
+
+    <h1 class="subheader" id="email-text">
+      {{current_user.email}}
+    </h1>
+    <h1 class="email-tooltip">
+      Change email?
+    </h1>
+
+  </div>
+
+  <div class="password">
+
+    <h1 class="header">
+      Password
+    </h1>
+
+    <h1 class="subheader" id="password-text" onclick="showPasswordPrompt(true)">
+      Password
+    </h1>
+    <h1 class="password-tooltip">
+      Change password?
+    </h1>
+
+    <script type="text/javascript">
+      fillRandomPassword("{{current_user.password}}");
+    </script>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages%}
+    <div class="notification is-danger" id="password-notification">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="box" id="change-password">
+      <form method="POST" action="/changePassword">
+        <div class="field">
+            <div class="control">
+                <input class="input is-large" type="password" name="old-password" placeholder="Old Password" autofocus="">
+            </div>
+        </div>
+        <div class="field">
+            <div class="control">
+                <input class="input is-large" type="password" name="new-password" placeholder="New Password">
+            </div>
+        </div>
+        <button class="button is-block is-info is-large is-fullwidth">Confirm</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<script type="text/javascript">
+  showPasswordPrompt();
+</script>
+{% endif %}
+{% endwith %}
+
+{% endblock %}
