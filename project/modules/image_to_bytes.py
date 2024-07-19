@@ -54,10 +54,10 @@ def find_images(chunk):
 if __name__ == "__main__":
     # Testing chunking image bytearrays together and then separating and showing them later.
 
-    chunk = get_bytes("images/garfield1.png") + get_bytes("images/garfield2.png") + get_bytes("images/garfield3.jpg")
+    chunk = get_bytes("images/garfield1.png") #+ get_bytes("images/garfield2.png") + get_bytes("images/garfield3.jpg")
     images = find_images(chunk)
 
     print(len(chunk))
     print(len(images))
 
-    image_from_bytes(images[2]).show()
+    image_from_bytes(images[0]).show()

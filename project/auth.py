@@ -9,6 +9,8 @@ from . import db
 from .modules.functions import bitshift_hash
 from string import ascii_uppercase, digits
 
+auth = Blueprint('auth', __name__)
+
 def contains_chars(chars: str, string: str) -> bool:
     for char in chars:
         if char in string:
@@ -42,8 +44,6 @@ def verify_password(password: str) -> bool | list[str]:
     if not messages:
         return True
     return messages
-
-auth = Blueprint('auth', __name__)
 
 @auth.route('/login')
 def login():

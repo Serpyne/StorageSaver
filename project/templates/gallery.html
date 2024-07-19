@@ -1,6 +1,22 @@
 {% extends "base.html" %}
 
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/gallery.css') }}">
+{% endblock %}
+
 {% block content %}
+
+<div class="container">
+  <div id="buttons-menu" class="navbar-menu">
+    <input type="image" class="menu-button" src="{{ url_for('static', filename='icons/uploadButton.png')}}"/>
+  </div>
+</div>
+<script type="text/javascript">
+  let buttonsMenu = document.getElementById("buttons-menu");
+  let heroHead = document.getElementsByClassName("hero-head")[0];
+  heroHead.appendChild(buttonsMenu.parentElement);
+</script>
+
 <h1 class="title">
   Photo Gallery
 </h1>
