@@ -9,4 +9,4 @@ class User(UserMixin, db.Model):
 
 class ByteChunk(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    value = db.Column(db.String(1024))
+    value = db.Column(db.(1024))

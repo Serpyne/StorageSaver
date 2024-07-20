@@ -1,5 +1,21 @@
 """
 Routes handling authentication of login and sign up of accuont, and logging out.
+
+devlog:
+    18/07 12:30 - Completed login and sign-up pages with authorisation
+    capabilites. If a user is logged in, the profile navigation button
+    is shown. However, if the user is not loggin in, the login and
+    sign-up buttons are shown instead. 
+
+    19/07 20:30 - Created verify_password function which returns a list
+    of errors[str] if the given password does not fit the criteria, or
+    returns True if all criteria are fulfilled.
+
+    20/07 20:30 - Created a gallery and started a menu bar with upload button.
+
+    21/07 3:51 - Added a file picker with functionality of sending the
+    image to the backend in base64, which is then decoded and converted
+    to the preferred image format of bytes.
 """
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash
@@ -7,7 +23,10 @@ from flask_login import login_user, logout_user, login_required
 from .models import User
 from . import db
 from .modules.functions import bitshift_hash
+
 from string import ascii_uppercase, digits
+import json
+import base64
 
 auth = Blueprint('auth', __name__)
 
@@ -140,3 +159,19 @@ def change_password():
     print(f"Updated {user.name}'s password from {old_password} to {new_password}.")
 
     return redirect(url_for("main.profile"))
+
+JPG_B64_START = "data:image/jpeg;base64"
+@auth.route('/uploadImage', methods=['POST'])
+@login_required
+def upload_image():
+    data = json.loads(request.data)
+    img = data["value"]
+    
+    img = img[len(JPG_B64_START):]
+
+    # g = open("out.jpg", "wb")
+    # g.write(base64.b64decode(img))
+    # g.close()
+    img_bytes = base64.b64decode(img)
+
+    return redirect(url_for("main.gallery"))

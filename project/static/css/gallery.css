@@ -4,6 +4,13 @@
     top: 0%;
 }
 
+#buttons-menu { justify-content: flex-end; }
+#upload-button {
+  display: none;
+  visibility: hidden;
+}
+
+img { max-width: 100%; max-height: 100%; }
 .menu-button {
   background-color: #00d1b2;
   border-radius: 8px;
@@ -29,8 +36,6 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-
-  margin-right: 0;
 }
 
 .menu-button:hover,

@@ -8,11 +8,11 @@ main = Blueprint('main', __name__)
 def index():
     return render_template('index.html')
 
-@main.route('/gallery')
-def gallery():
-    return render_template('gallery.html')
-
 @main.route('/profile')
 @login_required
 def profile():
     return render_template('profile.html', name=current_user.name)
+
+@main.route('/gallery')
+def gallery():
+    return render_template('gallery.html')
