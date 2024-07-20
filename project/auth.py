@@ -1,21 +1,5 @@
 """
-Routes handling authentication of login and sign up of accuont, and logging out.
-
-devlog:
-    18/07 12:30 - Completed login and sign-up pages with authorisation
-    capabilites. If a user is logged in, the profile navigation button
-    is shown. However, if the user is not loggin in, the login and
-    sign-up buttons are shown instead. 
-
-    19/07 20:30 - Created verify_password function which returns a list
-    of errors[str] if the given password does not fit the criteria, or
-    returns True if all criteria are fulfilled.
-
-    20/07 20:30 - Created a gallery and started a menu bar with upload button.
-
-    21/07 3:51 - Added a file picker with functionality of sending the
-    image to the backend in base64, which is then decoded and converted
-    to the preferred image format of bytes.
+Routes handling authentication of login and sign up of account, and logging out.
 """
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash

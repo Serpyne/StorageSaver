@@ -1,3 +1,11 @@
+"""
+SQLAlchemy models which represent records within the database.
+
+Current models being:
+    User(id, email, password, name)
+    ByteChunk(id, value<bytes>)
+"""
+
 from flask_login import UserMixin
 from . import db
 

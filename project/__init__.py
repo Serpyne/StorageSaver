@@ -1,3 +1,10 @@
+"""
+Used to mark the /project directory as a python Package directory,
+such that the child files can refer to one another using relative
+parent imports.
+The create_app function initalises the SQL database. 
+"""
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
