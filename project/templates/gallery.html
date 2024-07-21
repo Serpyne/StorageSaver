@@ -25,7 +25,7 @@
   Photo Gallery
 </h1>
 
-<div class="box">
+<div id="gallery-box" class="box">
   {% with messages = get_flashed_messages() %}
   {% if messages %}
     <div class="notification is-danger">
@@ -34,5 +34,7 @@
   {% endif %}
   {% endwith %}
 </div>
+
+<div id="upload-queue"></div>
 
 {% endblock %}

@@ -42,3 +42,24 @@ img { max-width: 100%; max-height: 100%; }
 .menu-button:focus {
   background-color: #00b89c;
 }
+
+#upload-queue {
+  padding: 1.25rem;
+  position: absolute;
+  left: 0%;
+  bottom: 0%;
+}
+
+.upload-item {
+  color: black;
+  background-color: white;
+  border-color: #4a4a4a;
+  border-radius: 6px;
+  box-shadow: 0 2px 3px rgba(10, 10, 10, .1), 0 0 0 1px rgba(10, 10, 10, .1);
+  padding: 1.25rem;
+  margin-block: 1rem auto;
+}
+
+#gallery-box {
+  display: flexbox;
+}

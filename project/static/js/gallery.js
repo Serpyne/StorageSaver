@@ -1,5 +1,9 @@
 window.addEventListener("load", (event) => {
 
+    let body = document.getElementsByClassName("hero-body")[0];
+    let uploadQueue = document.getElementById("upload-queue");
+    body.appendChild(uploadQueue);
+
     let uploadButton = document.getElementById("upload-button");
     uploadButton.addEventListener("change", (event) => {
 
@@ -21,7 +25,16 @@ window.addEventListener("load", (event) => {
             }
     
             reader.readAsDataURL(uploadButton.files[0]);
+
+            let fileName = uploadButton.files[0].name;
+            
+            let uploadItem = document.createElement("h1");
+            uploadItem.className = "upload-item";
+            uploadItem.innerHTML = fileName;
+
+            uploadQueue.appendChild(uploadItem);
         }
 
     });
+
 });
