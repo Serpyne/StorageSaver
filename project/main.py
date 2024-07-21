@@ -23,16 +23,31 @@ devlog:
     of errors[str] if the given password does not fit the criteria, or
     returns True if all criteria are fulfilled.
 
-    20/07 20:30 - Created a gallery and started a menu bar with upload button.
+    20/07 20:30 - Created a gallery and started a menu bar with upload
+    button.
 
     21/07 3:51 - Added a file picker with functionality of sending the
     image to the backend in base64, which is then decoded and converted
     to the preferred image format of bytes.
+
+    21/07 22:59 - Added file uploading and gallery which loads photos
+    stored in the database as bytes, which are then converted to base64
+    for the website to display. This required creating the Image model
+    which has many properties for returning the file extension, size,
+    dimensions, and base64 web format. Currently only supports .png
+    and .jpg image formats.
+    Should implement:
+        - Media storage for multiple users at a time.
+        - Store media in chunks of bytes?
+        - Caching images in session such that load times increase.
+        - Image selection and modification tools [select, delete,
+        rename, etc.]
 """
 
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from . import db
+from .models import Image
 
 main = Blueprint('main', __name__)
 
@@ -47,4 +62,11 @@ def profile():
 
 @main.route('/gallery')
 def gallery():
-    return render_template('gallery.html')
+    image_json = {}
+    
+    for image in Image.query.all():
+        image_json[image.name] = image.base64
+
+    # print([f"{key}: {value[:16]}..." for key, value in image_json.items()])
+
+    return render_template('gallery.html', images=image_json)

@@ -26,15 +26,16 @@
 </h1>
 
 <div id="gallery-box" class="box">
-  {% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <div class="notification is-danger">
-      {{ messages[0] }}
-    </div>
-  {% endif %}
-  {% endwith %}
+  <div class="overlay-content">
+    <span class="spinner"></span>
+  </div>
+  {% for name, value in images.items() %}
+    <img class="gallery-item" src="{{ value }}" alt="{{ name }}"/>
+  {% endfor %}
+  <script type="text/javascript">
+    destroyLoadingScreen();
+  </script>
 </div>
-
 <div id="upload-queue"></div>
 
 {% endblock %}

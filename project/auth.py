@@ -2,9 +2,11 @@
 Routes handling authentication of login and sign up of account, and logging out.
 """
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
 from flask_login import login_user, logout_user, login_required
-from .models import User
+
+from .models import User, Image
+from .models import JPG_START, PNG_START
 from . import db
 from .modules.functions import bitshift_hash
 
@@ -144,18 +146,36 @@ def change_password():
 
     return redirect(url_for("main.profile"))
 
-JPG_B64_START = "data:image/jpeg;base64"
 @auth.route('/uploadImage', methods=['POST'])
 @login_required
 def upload_image():
     data = json.loads(request.data)
     img = data["value"]
+    filename = data["name"]
+
+    extension = filename.split(".")[-1].lower()
+
+    if not extension:
+        return Response("Filename must be .png, .jpg or .jpeg", status=201, mimetype='application/json')
     
-    img = img[len(JPG_B64_START):]
+    if extension == "jpg":
+        img = img[len(JPG_START):]
 
-    # g = open("out.jpg", "wb")
-    # g.write(base64.b64decode(img))
-    # g.close()
+    elif extension == "png":
+        img = img[len(PNG_START):]
+
+    print(img[:16], img[-16:])
+
     img_bytes = base64.b64decode(img)
+    
+    new_image = Image(name=filename, value=img_bytes)
+    db.session.add(new_image)
+    db.session.commit()
 
-    return redirect(url_for("main.gallery"))
+    return_data = {
+        "name": filename,
+        "size": new_image.size,
+        "dims": new_image.dims
+    }
+
+    return jsonify(return_data)
