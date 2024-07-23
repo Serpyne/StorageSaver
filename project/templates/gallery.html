@@ -29,6 +29,9 @@
   <div class="overlay-content">
     <span class="spinner"></span>
   </div>
+  {% if not images %}
+    <h1 id="label-nothing" class="subtitle" style="color:black; margin:20rem auto;">There's nothing here.. Add something?</h1>
+  {% endif %}
   {% for name, value in images.items() %}
     <img class="gallery-item" src="{{ value }}" alt="{{ name }}"/>
   {% endfor %}

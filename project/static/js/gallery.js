@@ -1,9 +1,69 @@
-window.addEventListener("load", (event) => {
 
+function destroyLoadingScreen() {
+    /*
+    Destroys the spinner loading screen which is displayed when the images are loading.
+    */
+    let screens = document.getElementsByClassName("overlay-content");
+    for (let i = 0; i < screens.length; i++) {
+        screens[i].remove()
+    }
+}
+
+function createGalleryItem(/*string*/alt, /*string*/src) {
+    /*
+    Create a web element for a gallery item within the div "gallery-box"
+    */
+    let galleryItem = document.createElement("img");
+    galleryItem.className = "gallery-item";
+    galleryItem.alt = alt;
+    galleryItem.src = src;
+    galleryItem.style.marginInline = ".25rem"
+
+    let itemOverlay = document.createElement("div");
+    itemOverlay.className = "item-overlay";
+    itemOverlay.innerHTML = "TEST";
+    
+    galleryItem.appendChild(itemOverlay);
+    
+    let galleryBox = document.getElementById("gallery-box");
+    galleryBox.appendChild(galleryItem);
+
+    return galleryItem;
+}
+
+function createUploadItem(/*string*/fileName) {
+    /*
+    Creates and appends an upload text display to the upload queue called "upload-queue"
+    */
+    let uploadItem = document.createElement("h1");
+    uploadItem.className = "upload-item";
+    uploadItem.innerHTML = `Uploading '${fileName}'...`;
+
+    let uploadQueue = document.getElementById("upload-queue");
+    uploadQueue.appendChild(uploadItem);
+
+    return uploadItem;
+}
+
+window.addEventListener("load", (event) => {
+    /*
+    Once the webpage has loaded:
+        - the upload queue is added as a child to the body element
+        - callback is added to the upload button which:
+            => reads the image data as base64
+            => sends a POST request to the backend to add the image data to database
+            => an 'uploading..' notification is displayed
+            => the image is shown in the gallery
+            => notification updated to 'uploaded.'
+            => deletes the label "There's nothing here" in gallery if it exists.
+    */
+
+    // Add upload queue to body element
     let body = document.getElementsByClassName("hero-body")[0];
     let uploadQueue = document.getElementById("upload-queue");
     body.appendChild(uploadQueue);
 
+    // Add callback function to upload button
     let uploadButton = document.getElementById("upload-button");
     uploadButton.addEventListener("change", (event) => {
 
@@ -15,39 +75,45 @@ window.addEventListener("load", (event) => {
             let fileName = uploadButton.files[0].name;
             
             reader.onload = function (e) {
+                let imageB64 = e.target.result;
+
+                // Make request to backend to upload image to database
                 fetch("/uploadImage", {
                     method: "POST",
                     body: JSON.stringify({
                         name: fileName,
-                        value: e.target.result
+                        value: imageB64
                     }),
                     headers: {
                         "Content-type": "application/json; charset=UTF-8"
                     }
+                    // On response
                   })
-                // Expect json in response {id, name, size, dims}
+                  .then(response => response.json())
+                    // Expect data from response {id, name, size, dims}
+                  .then(data => {
+                    let image_dimensions = data.dims;
+                    let image_downsized = data.downsized;
+                    let image_size = data.size;
+                    uploadItem.innerHTML = `Uploaded ${fileName}.`;
 
-                // Reload page to show uploaded image(s)
-                location.reload()
+                    // Append uploaded image(s) to gallery box
+                    let galleryItem = createGalleryItem(fileName, image_downsized);
+                  })
+                  .catch(error => console.log('fetch failed.'));
+
+                // If "There's nothing here.. Add something?" label is still there (must be zero images), then it is deleted.
+                let labelNothing = document.getElementById("label-nothing");
+                if (labelNothing)
+                    labelNothing.remove();
             }
     
             reader.readAsDataURL(uploadButton.files[0]);
 
-            let uploadItem = document.createElement("h1");
-            uploadItem.className = "upload-item";
-            uploadItem.innerHTML = fileName;
-
-            uploadQueue.appendChild(uploadItem);
+            // Show user that image has been uploaded
+            let uploadItem = createUploadItem(fileName);
 
         }
 
     });
-
 });
-
-function destroyLoadingScreen() {
-    let screens = document.getElementsByClassName("overlay-content");
-    for (let i = 0; i < screens.length; i++) {
-        screens[i].remove()
-    }
-}

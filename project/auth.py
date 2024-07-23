@@ -3,12 +3,12 @@ Routes handling authentication of login and sign up of account, and logging out.
 """
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 
 from .models import User, Image
 from .models import JPG_START, PNG_START
 from . import db
-from .modules.functions import bitshift_hash
+from .modules.functions import bitshift_hash, log
 
 from string import ascii_uppercase, digits
 import json
@@ -49,6 +49,9 @@ def verify_password(password: str) -> bool | list[str]:
     if not messages:
         return True
     return messages
+
+def verify_email(email: str) -> bool | list[str]:
+    ...
 
 @auth.route('/login')
 def login():
@@ -98,7 +101,7 @@ def signup_post():
             flash(notif)
         return redirect(url_for('auth.signup'))
 
-    new_user = User(email=email, name=name, password=bitshift_hash(password))
+    new_user = User(email=email, username=name, password=bitshift_hash(password))
 
     db.session.add(new_user)
     db.session.commit()
@@ -110,6 +113,41 @@ def signup_post():
 def logout():
     logout_user()
     return redirect(url_for('main.index'))
+
+@auth.route('/changeEmail', methods=['POST'])
+@login_required
+def change_email():
+    data = request.form.to_dict()
+
+    old_email = data["old-email"]
+    new_email = data["new-email"]
+
+    if not (old_email and new_email):
+        flash("Email must not be empty.")
+        return redirect(url_for("main.profile"))
+    
+    if old_email == new_email:
+        flash("Email must be different to your previous email.")
+        return redirect(url_for("main.profile"))
+    
+    # If password does not match then throw error
+    user = User.query.filter_by(email=old_email).first()
+    if not user:
+        flash("Please check your email details and try again.")
+        return redirect(url_for("main.profile"))
+
+    email_check = verify_email(new_email)
+    if type(email_check) == list:
+        for notif in email_check:
+            flash(notif)
+        return redirect(url_for('main.profile'))
+    
+    user.email = new_email
+    db.session.commit()
+
+    log(f"Updated {user.username}'s email from {old_email} to {new_email}.")
+
+    return redirect(url_for("main.profile"))
 
 @auth.route('/changePassword', methods=['POST'])
 @login_required
@@ -142,16 +180,20 @@ def change_password():
     user.password = bitshift_hash(new_password)
     db.session.commit()
 
-    print(f"Updated {user.name}'s password from {old_password} to {new_password}.")
+    log(f"Updated {user.username}'s password from {old_password} to {new_password}.")
 
     return redirect(url_for("main.profile"))
 
 @auth.route('/uploadImage', methods=['POST'])
 @login_required
 def upload_image():
+    if request.method != "POST":
+        return
+
     data = json.loads(request.data)
     img = data["value"]
     filename = data["name"]
+    user = current_user.username
 
     extension = filename.split(".")[-1].lower()
 
@@ -164,18 +206,18 @@ def upload_image():
     elif extension == "png":
         img = img[len(PNG_START):]
 
-    print(img[:16], img[-16:])
-
     img_bytes = base64.b64decode(img)
     
-    new_image = Image(name=filename, value=img_bytes)
+    new_image = Image(name=filename, user=user, value=img_bytes)
     db.session.add(new_image)
     db.session.commit()
 
+    # Send response back with image information
     return_data = {
         "name": filename,
         "size": new_image.size,
-        "dims": new_image.dims
+        "dims": new_image.dims,
+        "downsized": new_image.resize(240)
     }
 
     return jsonify(return_data)

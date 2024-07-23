@@ -60,12 +60,10 @@ img { max-width: 100%; max-height: 100%; }
   margin-block: 1rem auto;
 }
 
-#gallery-box {
-  display: flexbox;
-}
-
 img.gallery-item {
   height: 15rem;
+  position: relative;
+  display: inline-block;
 }
 
 .overlay-content {
@@ -75,7 +73,6 @@ img.gallery-item {
   transform: translate(-50%, -50%);
   padding: 100%;
   background-color: rgba(0, 0, 0, 0.7);
-  z-index: ;
 }
 
 .spinner {
@@ -91,7 +88,34 @@ img.gallery-item {
 }
 
 @keyframes spin {
-100% {
-  transform: rotate(360deg);
+  100% {
+    transform: rotate(360deg);
+  }
 }
+
+@keyframes slideup {
+  0% {top: 0px;}
+  75% {top: 0px;}
+  100% {top: -20px;}
+}
+
+.item-overlay {
+  display: none;
+}
+
+.gallery-item:hover .item-overlay {
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,.5);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-block;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+
+  .gallery-item {
+      vertical-align: top;
+  }
 }

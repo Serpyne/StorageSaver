@@ -1,5 +1,9 @@
 # Stores all of the critical functions such as sort, search, hash, encrypt and decrypt.
 
+from path import Path
+from os.path import join, dirname
+from datetime import datetime
+
 def quick_sort():
     ...
 
@@ -33,3 +37,19 @@ def encrypt():
 
 def decrypt():
     ...
+
+def log(text, filename = ".log", include_datetime=True):
+    """
+    Log a message to the text file at /instance/.log
+    """
+    modules_dir = Path(dirname(__file__))
+    root = modules_dir.parent.parent
+    log_path = join(root, "instance/" + filename)
+
+    with open(log_path, "a") as f:
+        now = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+        now = (now + " "*10)[:20]
+        if include_datetime:
+            text = f"{now} {text}\n"
+
+        f.write(text)

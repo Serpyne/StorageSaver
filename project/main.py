@@ -40,14 +40,35 @@ devlog:
         - Media storage for multiple users at a time.
         - Store media in chunks of bytes?
         - Caching images in session such that load times increase.
+            (Note: Solved by photo downsizing on 22/07)
         - Image selection and modification tools [select, delete,
         rename, etc.]
+
+    22/07 13:48 - Noticed that page loading took upwards of 1.0 second
+    just to load six images. This was because the base64 images were
+    sent to the client in original resolution which meant load times
+    were extremely high.
+    Implemented a resize function to the Image model which returns a
+    resized base64 string representation of the image based on a given height. 
+
+    23/07 13:01 - Added threading to gallery loading so that load times
+    are reduced from ~5 secs to only 1 second.
+    Ideas:
+        - Add sorting (alphbetical, revrerse, date uploaded)
+        - Add filtering
+        - Add grouping
+        - Media details
+        - Add searching
+        - Append photos in alphabetical order
 """
 
 from flask import Blueprint, render_template
+
 from flask_login import login_required, current_user
 from . import db
 from .models import Image
+from time import perf_counter
+from threading import Thread
 
 main = Blueprint('main', __name__)
 
@@ -58,15 +79,38 @@ def index():
 @main.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html', name=current_user.name)
+    return render_template('profile.html')
+
+class ImageLoader:
+    def __init__(self):
+        self.images = {}
+
+    def load(self):
+        threads = []
+
+        user_images = Image.query.filter(Image.user == current_user.username)
+        for image in user_images:
+            threads.append(Thread(target=self.load_image, args=(image,)))
+
+
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        return self.images
+
+    def load_image(self, image: Image):
+        start = perf_counter()
+        self.images[image.name] = image.resize(height=240)
 
 @main.route('/gallery')
+@login_required
 def gallery():
-    image_json = {}
+    images = ImageLoader()
+    image_json = images.load()
     
-    for image in Image.query.all():
-        image_json[image.name] = image.base64
-
     # print([f"{key}: {value[:16]}..." for key, value in image_json.items()])
 
     return render_template('gallery.html', images=image_json)
