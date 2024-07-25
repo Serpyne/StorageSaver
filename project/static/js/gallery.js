@@ -17,6 +17,8 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
         src<string>, the image in base64
     */
 
+    let galleryBox = document.getElementById("gallery-box");
+
     let itemOverlay = document.createElement("div");
     itemOverlay.className = "item-overlay";
     itemOverlay.setAttribute("data-content", alt);
@@ -24,6 +26,35 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
     let selectButton = document.createElement("img");
     selectButton.className = "select-button";
     selectButton.src = "static/icons/unselected.png";
+    selectButton.setAttribute("state", "false");
+    selectButton.addEventListener("click", (event) => {
+        let state = selectButton.getAttribute("state");
+        if (state == "false") {
+            selectButton.setAttribute("state", "true");
+            selectButton.src = "static/icons/selected.png";
+        } else if (state == "true") {
+            selectButton.setAttribute("state", "false");
+            selectButton.src = "static/icons/unselected.png";
+        }
+
+        let selectButtons = document.getElementsByClassName("select-button");
+        let selected = [];
+        let button;
+        for (let i = 0; i < selectButtons.length; i++) {
+            button = selectButtons[i];
+            if (button.getAttribute("state") == "true")
+                selected.push(button);
+        }
+
+        if (selected.length > 0) {
+            console.log(selectButtons);
+            for (let i = 0; i < selectButtons.length; i++)
+                selectButtons[i].style.opacity = 1;
+        } else {
+            for (let i = 0; i < selectButtons.length; i++)
+                selectButtons[i].style = "";
+        }
+    });
     
     let galleryItem = document.createElement("img");
     galleryItem.className = "gallery-item";
@@ -34,7 +65,6 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
     itemOverlay.appendChild(galleryItem);
     itemOverlay.appendChild(selectButton);
 
-    let galleryBox = document.getElementById("gallery-box");
     galleryBox.appendChild(itemOverlay);
 
     return galleryItem;

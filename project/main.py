@@ -66,6 +66,10 @@ devlog:
         - As default user 'ubuntu', run `mysql -h <host> -P 3306 -u <user> -p`
         - There you have access to the SQL.
         I already did `CREATE DATABASE storagesaver`
+
+    25/07 23:40 - Added an overlay to gallery items which shows its file name
+    and a select button which will show all select buttons when add least one
+    item is selected. Next to add image close up, details, sharing and editing tools.
 """
 
 from flask import Blueprint, render_template, url_for
