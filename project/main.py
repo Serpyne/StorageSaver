@@ -69,7 +69,13 @@ devlog:
 
     25/07 23:40 - Added an overlay to gallery items which shows its file name
     and a select button which will show all select buttons when add least one
-    item is selected. Next to add image close up, details, sharing and editing tools.
+    item is selected.
+        - Next to add image close up, details, sharing and editing tools.
+
+    26/07 00:53 - Added right click context menu for images, and selecting items
+    will show a selection panel at the top of the screen with options for selecting
+    all and deselecting all.
+        - Could implement a 'select all in current group: with dropdown'.
 """
 
 from flask import Blueprint, render_template, url_for

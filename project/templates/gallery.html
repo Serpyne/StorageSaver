@@ -7,14 +7,31 @@
 
 {% block content %}
 
+<div id="contextMenu" class="context-menu">
+  <ul>
+      <li><a href="#" onclick="">Copy</a></li>
+      <li><a href="#" style="display: none;">Paste</a></li>
+      <li><a href="#">Delete</a></li>
+  </ul>
+</div>
+
 <div class="container">
   <div id="buttons-menu" class="navbar-menu">
-    <label for="upload-button">
-      <img id="image-preview" class="menu-button" src="{{ url_for('static', filename='icons/uploadButton.png')}}" alt="your image" />
-    </label>
+
+    <div id="upload">
+      <label for="upload-button">
+        <img id="upload-image" class="menu-button" src="{{ url_for('static', filename='icons/uploadButton.png')}}" alt="Upload" />
+      </label>
+    </div>
     <input type="file" id="upload-button" title="Upload" accept="image/png, image/jpeg" />
+
+    <div id="selection-buttons">
+      <img id="select-all-button" class="selection-button" src="{{ url_for('static', filename='icons/selectAll.png')}}" alt="Select all" />
+      <img id="deselect-all-button" class="selection-button" src="{{ url_for('static', filename='icons/blackCross.png')}}" alt="Close selection" />
+    </div>
   </div>
 </div>
+
 <script type="text/javascript">
   let buttonsMenu = document.getElementById("buttons-menu");
   let heroHead = document.getElementsByClassName("hero-head")[0];

@@ -9,6 +9,92 @@ function destroyLoadingScreen() {
     }
 }
 
+function selectEvent(selectButton) {
+    /* On select button click, its state is toggled and then decides if other
+    buttons should appear in conjunction to one button being selected.*/
+    let state = selectButton.getAttribute("state");
+    if (state == "false") {
+        selectButton.setAttribute("state", "true");
+        selectButton.src = "static/icons/selected.png";
+    } else if (state == "true") {
+        selectButton.setAttribute("state", "false");
+        selectButton.src = "static/icons/unselected.png";
+    }
+
+    // If there are any selected items, then display the select button on all items.
+    let selectButtons = document.getElementsByClassName("select-button");
+    let selected = [];
+    let button;
+    for (let i = 0; i < selectButtons.length; i++) {
+        button = selectButtons[i];
+        if (button.getAttribute("state") == "true")
+            selected.push(button);
+    }
+
+    if (selected.length > 0) {
+        for (let i = 0; i < selectButtons.length; i++)
+            selectButtons[i].style.opacity = 1;
+    } else {
+        for (let i = 0; i < selectButtons.length; i++)
+            selectButtons[i].style = "";
+    }
+
+    // Show bar with deselect all, select all
+    let buttonsMenu = document.getElementById("buttons-menu");
+    let uploadFrame = document.getElementById("upload");
+    let selectionFrame = document.getElementById("selection-buttons");
+    if (selected.length > 0) {
+        buttonsMenu.style.backgroundColor = "white";
+        uploadFrame.style.display = "none";
+        selectionFrame.style.display = "block";
+
+        let selectionButtons = document.getElementsByClassName("selection-button");
+        for (let i = 0; i < selectionButtons.length; i++)
+            selectionButtons[i].style.display = "inline-block";
+                
+    } else {
+        buttonsMenu.style = "";
+        uploadFrame.style = "";
+        selectionFrame.style.display = "none";
+    }
+
+    return selected;
+}
+
+function onItemClick(/*PointerEvent*/event, /*HTMLElement*/selectButton) {
+    /*
+    Logic performed when a gallery item is clicked.
+    - A shift click will select the item
+    - Clicking it normally will focus on the image.
+
+    */
+
+    // If item is shift-clicked, perform select logic.
+    if (event.shiftKey) {
+        selectEvent(selectButton);
+        return;
+    }
+}
+
+function onItemRightClick(/*PointerEvent*/event, /*HTMLElement*/selectButton) {
+    /*
+    When an item is right clicked, prevent the normal browser right
+    click popup from displaying, then show the solution's popup which
+    has selection tools and other.
+    */
+    event.preventDefault();
+    
+    let menu = document.getElementById("contextMenu");
+    menu.style.display = "block";
+    menu.style.left = event.pageX + "px";
+    menu.style.top = event.pageY + "px";
+}
+
+function hideContextMenu() {
+    let menu = document.getElementById("contextMenu");
+    menu.style.display = "none";
+}
+
 function createGalleryItem(/*string*/alt, /*string*/src) {
     /*
     Create a web element for a gallery item within the div "gallery-box"
@@ -23,39 +109,18 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
     itemOverlay.className = "item-overlay";
     itemOverlay.setAttribute("data-content", alt);
 
+    itemOverlay.addEventListener("click", (event) => onItemClick(event, selectButton));
+    // On right click
+    itemOverlay.addEventListener("contextmenu", (event) => onItemRightClick(event, selectButton));
+
     let selectButton = document.createElement("img");
     selectButton.className = "select-button";
     selectButton.src = "static/icons/unselected.png";
     selectButton.setAttribute("state", "false");
-    selectButton.addEventListener("click", (event) => {
-        let state = selectButton.getAttribute("state");
-        if (state == "false") {
-            selectButton.setAttribute("state", "true");
-            selectButton.src = "static/icons/selected.png";
-        } else if (state == "true") {
-            selectButton.setAttribute("state", "false");
-            selectButton.src = "static/icons/unselected.png";
-        }
 
-        let selectButtons = document.getElementsByClassName("select-button");
-        let selected = [];
-        let button;
-        for (let i = 0; i < selectButtons.length; i++) {
-            button = selectButtons[i];
-            if (button.getAttribute("state") == "true")
-                selected.push(button);
-        }
-
-        if (selected.length > 0) {
-            console.log(selectButtons);
-            for (let i = 0; i < selectButtons.length; i++)
-                selectButtons[i].style.opacity = 1;
-        } else {
-            for (let i = 0; i < selectButtons.length; i++)
-                selectButtons[i].style = "";
-        }
-    });
+    selectButton.addEventListener("click", (event) => selectEvent(selectButton));
     
+    // Append gallery item to HTML
     let galleryItem = document.createElement("img");
     galleryItem.className = "gallery-item";
     galleryItem.alt = alt;
@@ -84,9 +149,62 @@ function createUploadItem(/*string*/fileName) {
     return uploadItem;
 }
 
+function uploadEvent() {
+    // Callback for the upload button
+    let uploadButton = document.getElementById("upload-button");
+    let url = uploadButton.value;
+    let ext = url.substring(url.lastIndexOf('.') + 1).toLowerCase();
+    if (uploadButton.files && uploadButton.files[0] && (ext == "png" || ext == "jpeg" || ext == "jpg")) {
+        var reader = new FileReader();
+
+        let fileName = uploadButton.files[0].name;
+        
+        reader.onload = function (e) {
+            let imageB64 = e.target.result;
+
+            // Make request to backend to upload image to database
+            fetch("/uploadImage", {
+                method: "POST",
+                body: JSON.stringify({
+                    name: fileName,
+                    value: imageB64
+                }),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+                // On response
+                })
+                .then(response => response.json())
+                // Expect data from response {id, name, size, dims}
+                .then(data => {
+                let image_dimensions = data.dims;
+                let image_downsized = data.downsized;
+                let image_size = data.size;
+                uploadItem.innerHTML = `Uploaded ${fileName}.`;
+
+                // Append uploaded image(s) to gallery box
+                let galleryItem = createGalleryItem(fileName, image_downsized);
+                })
+                .catch(error => console.log('fetch failed.'));
+
+            // If "There's nothing here.. Add something?" label is still there (must be zero images), then it is deleted.
+            let labelNothing = document.getElementById("label-nothing");
+            if (labelNothing)
+                labelNothing.remove();
+        }
+
+        reader.readAsDataURL(uploadButton.files[0]);
+
+        // Show user that image has been uploaded
+        let uploadItem = createUploadItem(fileName);
+
+    }
+}
+
 window.addEventListener("load", (event) => {
     /*
     Once the webpage has loaded:
+        - context menu is added to body element
         - the upload queue is added as a child to the body element
         - callback is added to the upload button which:
             => reads the image data as base64
@@ -97,62 +215,22 @@ window.addEventListener("load", (event) => {
             => deletes the label "There's nothing here" in gallery if it exists.
     */
 
-    // Add upload queue to body element
+    // Context menu
+    document.onclick = hideContextMenu;
+    
     let body = document.getElementsByClassName("hero-body")[0];
+    let menu = document.getElementById("contextMenu");
+    body.appendChild(menu);
+
+    let selectionButtons = document.getElementsByClassName("selection-button");
+    for (let i = 0; i < selectionButtons.length; i++)
+        selectionButtons[i].style.display = "none";
+            
+    // Add upload queue to body element
     let uploadQueue = document.getElementById("upload-queue");
     body.appendChild(uploadQueue);
 
     // Add callback function to upload button
     let uploadButton = document.getElementById("upload-button");
-    uploadButton.addEventListener("change", (event) => {
-
-        let url = uploadButton.value;
-        let ext = url.substring(url.lastIndexOf('.') + 1).toLowerCase();
-        if (uploadButton.files && uploadButton.files[0] && (ext == "png" || ext == "jpeg" || ext == "jpg")) {
-            var reader = new FileReader();
-    
-            let fileName = uploadButton.files[0].name;
-            
-            reader.onload = function (e) {
-                let imageB64 = e.target.result;
-
-                // Make request to backend to upload image to database
-                fetch("/uploadImage", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        name: fileName,
-                        value: imageB64
-                    }),
-                    headers: {
-                        "Content-type": "application/json; charset=UTF-8"
-                    }
-                    // On response
-                  })
-                  .then(response => response.json())
-                    // Expect data from response {id, name, size, dims}
-                  .then(data => {
-                    let image_dimensions = data.dims;
-                    let image_downsized = data.downsized;
-                    let image_size = data.size;
-                    uploadItem.innerHTML = `Uploaded ${fileName}.`;
-
-                    // Append uploaded image(s) to gallery box
-                    let galleryItem = createGalleryItem(fileName, image_downsized);
-                  })
-                  .catch(error => console.log('fetch failed.'));
-
-                // If "There's nothing here.. Add something?" label is still there (must be zero images), then it is deleted.
-                let labelNothing = document.getElementById("label-nothing");
-                if (labelNothing)
-                    labelNothing.remove();
-            }
-    
-            reader.readAsDataURL(uploadButton.files[0]);
-
-            // Show user that image has been uploaded
-            let uploadItem = createUploadItem(fileName);
-
-        }
-
-    });
+    uploadButton.addEventListener("change", (event) => uploadEvent());
 });

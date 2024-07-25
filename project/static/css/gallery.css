@@ -11,8 +11,7 @@
 }
 
 img.menu-button { max-width: 100%; max-height: 100%; }
-.menu-button {
-  background-color: #00d1b2;
+.menu-button, .selection-button {
   border-radius: 8px;
   border-style: none;
   box-sizing: border-box;
@@ -37,6 +36,25 @@ img.menu-button { max-width: 100%; max-height: 100%; }
   -webkit-user-select: none;
   touch-action: manipulation;
 }
+/* .menu-button { background-color: #00d1b2; } */
+.selection-button {
+  background-color: transparent;
+  display: none;
+}
+.selection-button:hover {
+  background-color: #c0c0c0; 
+}
+
+#selection-buttons {
+  display: none;
+  display: flex;
+}
+
+#buttons-menu {
+  transition: all 0.5s;
+  -webkit-transition: all 0.5s;
+  border-radius: 0.5rem;
+}
 
 .menu-button:hover,
 .menu-button:focus {
@@ -54,7 +72,7 @@ img.menu-button { max-width: 100%; max-height: 100%; }
   color: black;
   background-color: white;
   border-color: #4a4a4a;
-  border-radius: 6px;
+  border-radius: 0.5rem;
   box-shadow: 0 2px 3px rgba(10, 10, 10, .1), 0 0 0 1px rgba(10, 10, 10, .1);
   padding: 1.25rem;
   margin-block: 1rem auto;
@@ -97,6 +115,12 @@ img.gallery-item, .item-overlay {
   0% {top: 0px;}
   75% {top: 0px;}
   100% {top: -20px;}
+}
+
+.item-overlay, .select-button, .gallery-item {
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .item-overlay:after, .item-overlay:before {
@@ -144,4 +168,36 @@ img.gallery-item, .item-overlay {
 
 .select-button:hover {
   opacity: 1;
+}
+
+.context-menu {
+  display: none;
+  position: absolute;
+  text-align: center;
+  background: rgb(153, 153, 153);
+  box-shadow: 0 2px 3px rgba(10, 10, 10, .1), 0 0 0 1px rgba(10, 10, 10, .1);
+  border-radius: .5rem;
+  z-index: 3;
+}
+
+.context-menu ul {
+  padding: 0px;
+  margin: 0px;
+  min-width: 150px;
+  list-style: none;
+}
+
+.context-menu ul li {
+  margin-bottom: .3rem;
+  margin-top: .3rem;
+  border-radius: .5rem;
+}
+
+.context-menu ul li a {
+  text-decoration: none;
+  color: black;
+}
+
+.context-menu ul li:hover {
+  background: rgb(57, 91, 79);
 }
