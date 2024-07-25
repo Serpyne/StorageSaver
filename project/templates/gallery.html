@@ -33,7 +33,9 @@
     <h1 id="label-nothing" class="subtitle" style="color:black; margin:20rem auto;">There's nothing here.. Add something?</h1>
   {% endif %}
   {% for name, value in images.items() %}
-    <img class="gallery-item" src="{{ value }}" alt="{{ name }}"/>
+    <script type="text/javascript">
+      createGalleryItem("{{ name }}", "{{ value }}");
+    </script>
   {% endfor %}
   <script type="text/javascript">
     destroyLoadingScreen();

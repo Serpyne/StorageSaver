@@ -10,7 +10,7 @@
   visibility: hidden;
 }
 
-img { max-width: 100%; max-height: 100%; }
+img.menu-button { max-width: 100%; max-height: 100%; }
 .menu-button {
   background-color: #00d1b2;
   border-radius: 8px;
@@ -60,7 +60,7 @@ img { max-width: 100%; max-height: 100%; }
   margin-block: 1rem auto;
 }
 
-img.gallery-item {
+img.gallery-item, .item-overlay {
   height: 15rem;
   position: relative;
   display: inline-block;
@@ -99,23 +99,39 @@ img.gallery-item {
   100% {top: -20px;}
 }
 
-.item-overlay {
-  display: none;
+.item-overlay:after, .item-overlay:before {
+  position: absolute;
+  opacity:0;
+  transition: all 0.5s;
+  -webkit-transition: all 0.5s;
+}
+.item-overlay:after {
+  content:'\A';
+  width:100%; height:100%;
+  top:0; left:0;
+  background-color:rgba(0,0,0,0.6);
+}
+.item-overlay:before {
+  content: attr(data-content);
+  /* width:100%; */
+  color:#fff;
+  z-index: 1;
+  bottom: 0;
+  padding: 4px 10px;
+  text-align: center;
+  background: transparent;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+.item-overlay:hover:after, .item-overlay:hover:before {
+  opacity:1;
 }
 
-.gallery-item:hover .item-overlay {
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,.5);
+.select-button {
   position: absolute;
   top: 0;
   left: 0;
-  display: inline-block;
-  -webkit-box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  box-sizing: border-box;
-
-  .gallery-item {
-      vertical-align: top;
-  }
+  margin: .5rem;
+  width: 2.5rem;
+  height: 2.5rem;
 }

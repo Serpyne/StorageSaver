@@ -60,17 +60,28 @@ devlog:
         - Media details
         - Add searching
         - Append photos in alphabetical order
+
+    25/07 2:59 - Instructions to configure AWS RDS MySQL Database:
+        - In cmd, enter `ssh -i "ec2-key-pair.pem" <ec2-host>`, where the host is in .env
+        - As default user 'ubuntu', run `mysql -h <host> -P 3306 -u <user> -p`
+        - There you have access to the SQL.
+        I already did `CREATE DATABASE storagesaver`
 """
 
-from flask import Blueprint, render_template
-
+from flask import Blueprint, render_template, url_for
 from flask_login import login_required, current_user
+
 from . import db
 from .models import Image
+
 from time import perf_counter
 from threading import Thread
 
 main = Blueprint('main', __name__)
+
+@main.route('/favicon.ico')
+def favicon():
+    return url_for("static", filename="icons/favicon.ico")
 
 @main.route('/')
 def index():

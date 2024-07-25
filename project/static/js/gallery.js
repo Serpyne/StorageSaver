@@ -12,21 +12,30 @@ function destroyLoadingScreen() {
 function createGalleryItem(/*string*/alt, /*string*/src) {
     /*
     Create a web element for a gallery item within the div "gallery-box"
+    Parameters:
+        alt<string>, the name of the image file
+        src<string>, the image in base64
     */
+
+    let itemOverlay = document.createElement("div");
+    itemOverlay.className = "item-overlay";
+    itemOverlay.setAttribute("data-content", alt);
+
+    let selectButton = document.createElement("img");
+    selectButton.className = "select-button";
+    selectButton.src = "static/icons/unselected.png";
+    
     let galleryItem = document.createElement("img");
     galleryItem.className = "gallery-item";
     galleryItem.alt = alt;
     galleryItem.src = src;
     galleryItem.style.marginInline = ".25rem"
 
-    let itemOverlay = document.createElement("div");
-    itemOverlay.className = "item-overlay";
-    itemOverlay.innerHTML = "TEST";
-    
-    galleryItem.appendChild(itemOverlay);
-    
+    itemOverlay.appendChild(galleryItem);
+    itemOverlay.appendChild(selectButton);
+
     let galleryBox = document.getElementById("gallery-box");
-    galleryBox.appendChild(galleryItem);
+    galleryBox.appendChild(itemOverlay);
 
     return galleryItem;
 }
