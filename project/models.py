@@ -6,12 +6,16 @@ Current models being:
     ByteChunk(id, value<bytes>)
 """
 
-import PIL.Image
 from flask_login import UserMixin
 from . import db
-import PIL
 from io import BytesIO
-from base64 import b64encode
+from base64 import b64encode, b64decode
+
+import PIL
+import PIL.Image
+from PIL.Image import Exif
+
+ORIENTATION = 0x112 # 274
 
 JPG_START = "data:image/jpeg;base64,"
 PNG_START = "data:image/png;base64,"
@@ -29,7 +33,7 @@ class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     user = db.Column(db.String)
-    value = db.Column(db.String)
+    value: bytes = db.Column(db.String)
 
     @property
     def extension(self) -> str | bool:
@@ -45,12 +49,12 @@ class Image(db.Model):
         return False
         
     @property
-    def bytes(self) -> BytesIO:
+    def bytesio(self) -> BytesIO:
         return BytesIO(self.value)
 
     @property
     def image(self) -> PIL.Image.Image:
-        return PIL.Image.open(self.bytes)
+        return PIL.Image.open(self.bytesio)
 
     @property
     def size(self) -> int:
@@ -89,3 +93,49 @@ class Image(db.Model):
             return PNG_START + img_str.decode("utf-8")
         elif extension == ".jpeg":
             return JPG_START + img_str.decode("utf-8")
+    
+    def rotate_left(self) -> bytes:
+        original = self.image
+        original = original.rotate(90, expand=True)
+
+        extension = self.extension
+
+        buffered = BytesIO()
+        original.save(buffered, format=extension[1:]) # Stripping the period off of the file extension
+        return buffered.getvalue()
+
+    
+    def deprecated_rotate_left(self) -> bytes:
+        """
+        Deprecated as the nested for loops was too slow.
+        Rotates the image 90 degrees anti-clockwise. Returns a Byte
+        """
+        w, h = self.dims
+
+        original = self.image
+        original_pixels = original.load()
+
+        new = PIL.Image.new('RGB', (h, w))
+        new_pixels = new.load()
+
+        for y in range(h):
+            for x in range(w):
+                new_pixels[y, w-x-1] = original_pixels[x, y]
+        
+        extension = self.extension
+
+        buffered = BytesIO()
+        new.save(buffered, format=extension[1:]) # Stripping the period off of the file extension
+
+        return buffered.getvalue()
+        
+    def get_metadata(self) -> Exif:
+        """
+        Get image metadata using python's Exif module.
+        """
+        im = PIL.Image.open(self.bytesio)
+        return im.getexif()
+    
+    @property
+    def orientation(self) -> int:
+        return self.get_metadata().get(ORIENTATION)

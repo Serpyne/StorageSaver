@@ -194,7 +194,7 @@ def upload_image():
     img = data["value"]
     filename = data["name"]
     user = current_user.username
-
+    
     extension = filename.split(".")[-1].lower()
 
     if not extension:
@@ -207,10 +207,17 @@ def upload_image():
         img = img[len(PNG_START):]
 
     img_bytes = base64.b64decode(img)
-    
+
     new_image = Image(name=filename, user=user, value=img_bytes)
+    
+    # Base64 Image is sometimes rotated 90 degrees clockwise.
+    # Rotate it back if the orientation is that.
+    if new_image.orientation == 8:
+        new_image.value = new_image.rotate_left()
+
     db.session.add(new_image)
     db.session.commit()
+
 
     # Send response back with image information
     return_data = {
@@ -221,3 +228,14 @@ def upload_image():
     }
 
     return jsonify(return_data)
+
+@auth.route('/getImage', methods=['POST'])
+@login_required
+def getImage():
+    data = json.loads(request.data)
+    filename = data["name"]
+    username = current_user.username
+
+    img = Image.query.filter_by(name=filename, user=username).first()
+
+    return jsonify({"base64": img.base64, "downsized": img.resize(img.dims[1]//2)})

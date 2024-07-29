@@ -76,9 +76,24 @@ devlog:
     will show a selection panel at the top of the screen with options for selecting
     all and deselecting all.
         - Could implement a 'select all in current group: with dropdown'.
+
+    26/07 10:53 - Fixed an issue where images uploaded in base64 lose their orientation
+    metadata, so I added a correction which would rotate the images back if the
+    orientation was wrong. 
+
+    29/07 14:54 - Gallery items on click will show a preview with a half-opacity black
+    background. Images are first shown as the low quality version and then once the 
+    full quality image is taken from the database, it is shown.
+
+    29/07 22:31 - Image zooming complete with a lens to zoom into a specific area of
+    the image.
+
+    29/07 10:48 - Optimised the zooming by lowering image quality a factor of 4, and
+    fixed some issues with the viewer closing when it wasn't supposed to, like when
+    zoomed image was clicked and then the viewer closed.
 """
 
-from flask import Blueprint, render_template, url_for
+from flask import Blueprint, render_template, url_for, request
 from flask_login import login_required, current_user
 
 from . import db
@@ -113,7 +128,6 @@ class ImageLoader:
         for image in user_images:
             threads.append(Thread(target=self.load_image, args=(image,)))
 
-
         for thread in threads:
             thread.start()
 
@@ -123,15 +137,22 @@ class ImageLoader:
         return self.images
 
     def load_image(self, image: Image):
-        start = perf_counter()
-        self.images[image.name] = image.resize(height=240)
+        self.images[f"{image.id}:{image.name}"] = image.resize(height=240)
 
-@main.route('/gallery')
+@main.route('/gallery', methods=["GET"])
 @login_required
 def gallery():
+    # Gallery page
+
+    # Viewing single files
+    parameters = request.args
+    if "id" in parameters:
+        img = Image.query.get(int(parameters["id"]))
+        return render_template('viewer.html', data=img)
+
     images = ImageLoader()
     image_json = images.load()
-    
+
     # print([f"{key}: {value[:16]}..." for key, value in image_json.items()])
 
     return render_template('gallery.html', images=image_json)
