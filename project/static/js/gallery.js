@@ -1,6 +1,12 @@
 
+// Declare HTML elements on load
+
 let viewer;
 let viewerImage;
+let viewerMenu;
+let viewerResult;
+
+let sidemenu;
 
 function destroyLoadingScreen() {
     /*
@@ -120,18 +126,21 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
         return;
     }
 
-    // First show a low quality version
+    if (sidemenu.getAttribute("state") == "open")
+        toggleMenu();
+
+    // Display the viewer and show the image in low quality (first)
     viewer.style.display = "flex";
     viewerImage.src = item.firstElementChild.src;
-    let img = document.getElementById("viewer-img");
-    let result = document.getElementById("viewer-zoom");
-    result.style.backgroundImage = `url('${viewerImage.src}')`
+    viewerResult.style.backgroundImage = `url('${viewerImage.src}')`
 
     let lens = document.getElementsByClassName("viewer-lens")[0];
-    cx = result.offsetWidth / lens.offsetWidth;
-    cy = result.offsetHeight / lens.offsetHeight;
+    cx = viewerResult.offsetWidth / lens.offsetWidth;
+    cy = viewerResult.offsetHeight / lens.offsetHeight;
 
-    result.style.backgroundSize = (img.width * cx) + "px " + (img.height * cy) + "px";
+    viewerResult.style.backgroundSize = (viewerImage.width * cx) + "px " + (viewerImage.height * cy) + "px";
+
+    viewerMenu.style.display = "flex";
 
     // Get image data from backend
     let fileName = item.getAttribute("data-content");
@@ -147,7 +156,7 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
         .then(response => response.json())
         .then(data => {
             viewerImage.src = data.base64;
-            result.style.backgroundImage = `url('${data.downsized}')`
+            viewerResult.style.backgroundImage = `url('${data.downsized}')`
         })
         .catch((error) => {
             console.log(error);
@@ -177,16 +186,16 @@ function imageZoom() {
 
     img.parentElement.insertBefore(lens, img);
 
-    lens.addEventListener("mousemove", moveLens);
-    img.addEventListener("mousemove", moveLens);
-
-    lens.addEventListener("touchmove", moveLens);
-    img.addEventListener("touchmove", moveLens);
+    for (let event of ["mousemove", "touchmove", "click"]) {
+        lens.addEventListener(event, moveLens);
+        img.addEventListener(event, moveLens);
+    }
 
     function moveLens(/*PointerEvent*/event) {
-        // If mouse is not clicked, return
-        if (event.buttons == 0) {
+        // If mouse is not clicked or once mouse is released, return
+        if (event.buttons == 0 && event.type !== "click") {
             lens.style.opacity = 0;
+            result.style.opacity = 0.9;
             return;
         }
 
@@ -197,6 +206,7 @@ function imageZoom() {
         }
 
         lens.style.opacity = 1;
+        result.style.opacity = 1;
         viewerActive = true;
         
         // Position of zoomed image
@@ -220,24 +230,26 @@ function imageZoom() {
     }
 }
 
-function closeViewer(/*PointerEvent*/event) {
-    // Only close if mouse click was on the background
-    if (mouseInElement(viewerImage, event))
-        return;
-    if (event.target !== viewer)
-        return;
+function closeViewer(/*PointerEvent*/event, /*bool*/force = false) {
+    if (!force) {
+        // Only close if mouse click was on the background
+        if (mouseInElement(viewerImage, event))
+            return;
+        if (event.target !== viewer)
+            return;
 
-    // If viewer is active, don't close
-    if (viewerActive)
-        return;
-    
-    // Close the item viewer if it is already open.
-    if (viewerImage.style.display == "none")
-        return;
-    else {
-        viewer.style.display = "none";
-        viewerImage.src = "";
+        // If viewer is active, don't close
+        if (viewerActive)
+            return;
+        // Close the item viewer if it is already open.
+        if (viewerImage.style.display == "none")
+            return;
     }
+
+    viewer.style.display = "none";
+    viewerImage.src = "";
+    
+    viewerMenu.style.display = "none";
 }
 
 function onItemRightClick(/*PointerEvent*/event, /*HTMLElement*/item) {
@@ -388,10 +400,30 @@ window.addEventListener("load", (event) => {
     let body = document.getElementsByClassName("hero-body")[0];
     let menu = document.getElementById("contextMenu");
     body.appendChild(menu);
+
+    let navbar = document.getElementsByClassName("navbar")[0];
+    let galleryNav = document.getElementById("gallery-container");
+    navbar.appendChild(galleryNav);
     
+    sidemenu = document.getElementById("sidebar-menu");
+    menuButton = document.getElementById("menu-button");
+    
+    menuButton.addEventListener("click", (event) => {
+        if (sidemenu.getAttribute("state") === "closed")
+            return;
+
+        // When menu opened, if viewer is open, close viewer
+        if (viewer.style.display === "flex")
+            closeViewer(event, force=true);
+    });
+
+    // Viewer declaration
     viewer = document.getElementById("viewer");
-    viewer.addEventListener("click", (event) => closeViewer(event))
     viewerImage = document.getElementById("viewer-img");
+    viewerMenu = document.getElementById("viewer-menu");
+    viewerResult = document.getElementById("viewer-zoom");
+
+    viewer.addEventListener("click", (event) => closeViewer(event))
     body.appendChild(viewer);
 
     imageZoom();

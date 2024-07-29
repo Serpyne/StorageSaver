@@ -91,6 +91,16 @@ devlog:
     29/07 10:48 - Optimised the zooming by lowering image quality a factor of 4, and
     fixed some issues with the viewer closing when it wasn't supposed to, like when
     zoomed image was clicked and then the viewer closed.
+
+    30/07 1:56-2:23 - Converted the old top navigation menu into a foldable side bar
+    menu which smoothly opens and closes. Also closes the image viewer when opened,
+    and when an item is viewed, the menu is closed.
+    What navigation to add next?
+        - All files
+        - File manager
+        - Albums
+        - Settings
+        - About Us
 """
 
 from flask import Blueprint, render_template, url_for, request
