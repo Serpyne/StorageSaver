@@ -1,7 +1,7 @@
 
 'Storage Saver' SAT project for VCE Software Development 3/4.
 
-# Usage
+# Installation
 
 - Download the git repo.
 - Make sure Python 3.11 and PIP are installed.
@@ -32,5 +32,7 @@ FLASK_ENV=development
 secret=<your secret>
 ```
 - Note that the secret can be anything, as it is used to secure your database.
+
+# Usage
 - You can run the program with `python -m flask run`.
 - Access the site at **localhost:5000**.
