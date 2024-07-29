@@ -11,6 +11,7 @@
     - Create a file named **db.sqlite** in the */instance* directory.
     - Create two tables in the database, one named ***user*** and one named ***image***.
 
+    - This is the format of the models within the respective tables:
 ```
     class User(UserMixin, db.Model):
         id = db.Column(db.Integer, primary_key=True)
@@ -24,6 +25,12 @@
         user = db.Column(db.String)
         value: bytes = db.Column(db.String)
 ```
-
+    - Create a file named **.env** in the root directory with three variables:
+```
+    FLASK_APP=project
+    FLASK_ENV=development
+    secret=<your secret>
+```
+    - Note that the secret can be anything, as it is used to secure your database.
 - You can run the program with `python -m flask run`.
 - Access the site at **localhost:5000**.
