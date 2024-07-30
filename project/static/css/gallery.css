@@ -34,6 +34,10 @@ img.menu-button { max-width: 100%; max-height: 100%; }
   touch-action: manipulation;
 }
 
+#selection-buttons div {
+  display: none;
+}
+
 .selection-button {
   background-color: transparent;
   display: inline-block;
@@ -51,7 +55,6 @@ img.menu-button { max-width: 100%; max-height: 100%; }
 
 #selection-buttons {
   display: none;
-  display: flex;
 }
 
 #buttons-menu {
@@ -238,6 +241,9 @@ img.gallery-item, .item-overlay {
   width: 300px;
   height: 300px;
   opacity: 0;
+
+  transition: opacity 150ms;
+  -webkit-transition: opacity 150ms;
 }
 
 .viewer-img-zoom {
@@ -247,9 +253,7 @@ img.gallery-item, .item-overlay {
   overflow: hidden;
   background-repeat: no-repeat;
   opacity: 0.9;
-  
-  transition: background-position 0.1s;
-  -webkit-transition: background-position 0.1s;
+  position: relative;
 }
 
 .viewer-menu {
@@ -265,4 +269,101 @@ img.gallery-item, .item-overlay {
 #gallery-container {
   position: absolute;
   right: 0;
+}
+
+.zoom-notif {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 5;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+}
+
+#info-button {
+  display: none;
+}
+
+.info-panel {
+  display: none;
+  position: absolute;
+  flex-direction: column;
+  right: 0;
+  bottom: 0;
+
+  background: white;
+  overflow: hidden;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border-radius: 0.5rem;
+  border-bottom-right-radius: 0;
+  z-index: 6;
+  user-select: text;
+  -webkit-user-select: text;
+
+  transition: all 500ms ease-in-out;
+  -webkit-transition: all 500ms ease-in-out;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  white-space: nowrap;
+}
+
+.info-row h1 {
+  color: black;
+  padding-inline: 1rem;
+}
+
+.notification-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 7;
+}
+.notification {
+  background: rgba(255, 255, 255);
+  display: flex;
+  border-radius: 0.5rem;
+  flex-direction: column;
+  align-items: center;
+  margin: auto;
+  padding: 1rem;
+}
+
+#confirm-button {
+  background: #b8b2b2;
+}
+#confirm-button:hover {
+  background: #7e7e7e;
+}
+
+#cancel-button {
+  background: #00b89c;
+}
+#cancel-button:hover {
+  background: #09907b;
+}
+
+.row {
+  display: flex;
+  padding: 0.5rem;
+  justify-content: center;
+}
+
+.row h1 {
+  margin: 1rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
 }

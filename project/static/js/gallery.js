@@ -1,12 +1,23 @@
 
 // Declare HTML elements on load
 
+let body;
+let notification;
+
 let viewer;
 let viewerImage;
 let viewerMenu;
 let viewerResult;
 
 let sidemenu;
+
+let infoButton;
+let infoPanel;
+
+let uploadContainer;
+let uploadItem;
+
+let galleryBox;
 
 function destroyLoadingScreen() {
     /*
@@ -61,7 +72,7 @@ function checkSelected() {
         uploadFrame.style.display = "none";
         selectionFrame.style.display = "flex";
 
-        let selectionButtons = document.getElementsByClassName("selection-button");
+        let selectionButtons = document.getElementById("selection-buttons").children;
         for (let i = 0; i < selectionButtons.length; i++)
             selectionButtons[i].style.display = "inline-flex";
                 
@@ -98,7 +109,8 @@ function selectAll() {
     checkSelected();
 }
 
-let cx, cy;
+let metadata;
+let downsizedImage;
 function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
     /*
     Logic performed when a gallery item is clicked.
@@ -133,14 +145,27 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
     viewer.style.display = "flex";
     viewerImage.src = item.firstElementChild.src;
     viewerResult.style.backgroundImage = `url('${viewerImage.src}')`
+    downsizedImage = viewerImage.src;
 
-    let lens = document.getElementsByClassName("viewer-lens")[0];
-    cx = viewerResult.offsetWidth / lens.offsetWidth;
-    cy = viewerResult.offsetHeight / lens.offsetHeight;
+    let overlays = viewerResult.children;
+    for (let overlay of overlays)
+        overlay.remove();
 
-    viewerResult.style.backgroundSize = (viewerImage.width * cx) + "px " + (viewerImage.height * cy) + "px";
+    let overlay = document.createElement("div");
+    overlay.className = "zoom-notif";
+    overlay.innerHTML = "Click image on left to zoom";
+    
+    viewerResult.appendChild(overlay);
+
+    // Show info button
+    infoButton.style.display = "flex";
+    infoPanel.innerHTML = "";
+
+    // Make result viewer square
+    viewerResult.style.width = `${viewerResult.getBoundingClientRect().height}px`;
 
     viewerMenu.style.display = "flex";
+    uploadContainer.style.display = "none";
 
     // Get image data from backend
     let fileName = item.getAttribute("data-content");
@@ -157,11 +182,42 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
         .then(data => {
             viewerImage.src = data.base64;
             viewerResult.style.backgroundImage = `url('${data.downsized}')`
+            downsizedImage = data.downsized;
+
+            metadata = data.metadata;
+            // Populate info panel / image details
+            for (let key in metadata) {
+                let row = document.createElement("div");
+                let name = document.createElement("h1");
+                let value = document.createElement("h1");
+
+                row.appendChild(name);
+                row.appendChild(value);
+                row.className = "info-row";
+
+                name.innerHTML = key;
+                value.innerHTML = metadata[key];
+                value.style.fontWeight = "100";
+                
+                infoPanel.appendChild(row);
+            }
+        
         })
         .catch((error) => {
             console.log(error);
             viewer.style.display = "none";
         });
+}
+
+function toggleDetails() {
+    if (infoPanel.style.display == "none") {
+        infoPanel.style.maxWidth = '0';
+        infoPanel.style.display = "flex";
+        setTimeout("infoPanel.style.maxWidth = '100%';", 1);
+    } else {
+        infoPanel.style.maxWidth = '0';
+        setTimeout("infoPanel.style.display = 'none';", 500);
+    }
 }
 
 function mouseInElement(/*HTMLElement*/element, /*PointerEvent*/event) {
@@ -175,58 +231,101 @@ function mouseInElement(/*HTMLElement*/element, /*PointerEvent*/event) {
 }
 
 let viewerActive = false;
+let lensWidth, lensHeight;
 function imageZoom() {
-    let img, lens, result;
+    let cx, cy;
+    let viewerImage, lens, viewerResult;
 
-    img = document.getElementById("viewer-img");
-    result = document.getElementById("viewer-zoom");
+    viewerImage = document.getElementById("viewer-img");
+    viewerResult = document.getElementById("viewer-zoom");
 
     lens = document.createElement("div");
     lens.setAttribute("class", "viewer-lens");
+    lens.setAttribute("zoom", "1");
 
-    img.parentElement.insertBefore(lens, img);
+    viewerImage.parentElement.insertBefore(lens, viewerImage);
 
     for (let event of ["mousemove", "touchmove", "click"]) {
+        viewerImage.addEventListener(event, moveLens);
         lens.addEventListener(event, moveLens);
-        img.addEventListener(event, moveLens);
     }
 
-    function moveLens(/*PointerEvent*/event) {
-        // If mouse is not clicked or once mouse is released, return
-        if (event.buttons == 0 && event.type !== "click") {
-            lens.style.opacity = 0;
-            result.style.opacity = 0.9;
+    viewerImage.addEventListener("wheel", changeSize);
+    lens.addEventListener("wheel", changeSize);
+
+    function changeSize(/*PointerEvent*/event) {
+        if (viewer.style.display !== "flex")
             return;
+
+        // Smooth logarithmic zoom
+        let zoom, logZoom;
+        zoom = parseFloat(lens.getAttribute("zoom"));
+        logZoom = Math.log(zoom) + event.deltaY * 0.0005 // Increments of +-0.05
+        logZoom = Math.max(-2, Math.min(1.4, logZoom));
+        
+        zoom = Math.exp(logZoom);
+        lens.setAttribute("zoom", zoom);
+        
+        // If zoomed in enough, make the result the original quality.
+        if (logZoom < -0.6)
+            viewerResult.style.backgroundImage = `url('${viewerImage.src}')`;
+        else
+            viewerResult.style.backgroundImage = `url('${downsizedImage}')`;
+
+        let rect = lens.getBoundingClientRect();
+        lens.style.width = `${300 * zoom}px`;
+        lens.style.height = `${300 * zoom}px`;
+
+        moveLens(event, force=true);
+    }
+
+    function moveLens(/*PointerEvent*/event, /*bool*/force=false) {
+        if (!force) {
+            // If mouse is not clicked or once mouse is released, return
+            if (event.buttons == 0 && event.type !== "click") {
+                lens.style.opacity = 0;
+                viewerResult.style.opacity = 1;
+                return;
+            }
+
+            // If pointer is not within the bounds of the image, return
+            if (!mouseInElement(viewerImage, event)) {
+                lens.style.opacity = 0;
+                return;
+            }
         }
 
-        // If pointer is not within the bounds of the image, return
-        if (!mouseInElement(img, event)) {
-            lens.style.opacity = 0;
-            return;
-        }
+        // Remove "Click to zoom" overlay on click
+        let overlays = viewerResult.children;
+        for (let overlay of overlays)
+            overlay.remove();
 
         lens.style.opacity = 1;
-        result.style.opacity = 1;
+        viewerResult.style.opacity = 1;
         viewerActive = true;
+        
+        event.preventDefault();
         
         // Position of zoomed image
         let x, y;
         
-        event.preventDefault();
-        
         x = event.x - (lens.offsetWidth / 2);
         y = event.y - (lens.offsetHeight / 2);
 
-        let rect = img.getBoundingClientRect();
+        lens.style.left = x + "px";
+        lens.style.top = y + "px";
+
+        let rect = viewerImage.getBoundingClientRect();
         let rel_mouse = { 
             x: x - rect.left,
             y: y - rect.top
         };
 
-        lens.style.left = x + "px";
-        lens.style.top = y + "px";
+        cx = viewerResult.offsetHeight / lens.offsetWidth;
+        cy = viewerResult.offsetHeight / lens.offsetHeight;
 
-        result.style.backgroundPosition = `${-rel_mouse.x * cx}px ${-rel_mouse.y * cy}px`;
+        viewerResult.style.backgroundSize = (viewerImage.width * cx) + "px " + (viewerImage.height * cy) + "px";
+        viewerResult.style.backgroundPosition = `${-rel_mouse.x * cx}px ${-rel_mouse.y * cy}px`;
     }
 }
 
@@ -248,8 +347,10 @@ function closeViewer(/*PointerEvent*/event, /*bool*/force = false) {
 
     viewer.style.display = "none";
     viewerImage.src = "";
-    
     viewerMenu.style.display = "none";
+    
+    infoButton.style.display = "none";
+    uploadContainer.style.display = "flex";
 }
 
 function onItemRightClick(/*PointerEvent*/event, /*HTMLElement*/item) {
@@ -279,7 +380,7 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
         src<string>, the image in base64
     */
 
-    let galleryBox = document.getElementById("gallery-box");
+    galleryBox = document.getElementById("gallery-box");
 
     let itemOverlay = document.createElement("div");
     itemOverlay.className = "item-overlay";
@@ -315,7 +416,7 @@ function createUploadItem(/*string*/fileName) {
     /*
     Creates and appends an upload text display to the upload queue called "upload-queue"
     */
-    let uploadItem = document.createElement("h1");
+    uploadItem = document.createElement("h1");
     uploadItem.className = "upload-item";
     uploadItem.innerHTML = `Uploading '${fileName}'...`;
 
@@ -323,6 +424,68 @@ function createUploadItem(/*string*/fileName) {
     uploadQueue.appendChild(uploadItem);
 
     return uploadItem;
+}
+
+function overwriteFile(/*string*/filename, /*string*/value) {
+    fetch("/uploadImage", {
+        method: "POST",
+        body: JSON.stringify({
+            name: filename,
+            value: value,
+            overwrite: true
+        }),
+        headers: {
+            "Content-type": "application/json; charset=UTF-8"
+        }
+        })
+        .then(response => response.json())
+        .then(data => {
+            uploadItem.innerHTML = `Overwrote ${filename}.`;
+            
+            let image_downsized = data.downsized;
+            // Replace image with overwritten file
+            for (let item of galleryBox.children) 
+                if (item.getAttribute("data-content") === filename)
+                    item.firstElementChild.src = image_downsized;
+        })
+        .catch((error) => console.log(error));
+
+    clearNotifications();
+}
+
+function clearNotifications() {
+    let notifications = document.getElementsByClassName("notification-overlay");
+    for (let _notification of notifications)
+        _notification.remove();
+}
+
+function createNotification(/*string*/text, /*json*/options) {
+
+    notification = document.createElement("div");
+
+    notification.className = "notification-overlay";
+    let prompt = document.createElement("div");
+    notification.appendChild(prompt);
+    prompt.className = "notification";
+    prompt.innerHTML = `<h1 style='color: black;'>${text}</h1>`;
+
+    let buttonsDiv = document.createElement("div");
+    buttonsDiv.className = "row";
+
+    let buttons = {};
+
+    for (let option in options) {
+        let button = document.createElement("h1");
+        button.className = "notification-button";
+        button.innerHTML = options[option];
+        buttons[option] = button;
+        buttonsDiv.appendChild(button);
+    }
+    prompt.appendChild(buttonsDiv);
+
+    document.getElementById("top-level").appendChild(notification);
+
+    return buttons;
 }
 
 function uploadEvent() {
@@ -351,15 +514,27 @@ function uploadEvent() {
                 // On response
                 })
                 .then(response => response.json())
-                // Expect data from response {id, name, size, dims}
+                // Expect data from response {response<int>, id, name, size, dims}
                 .then(data => {
-                let image_dimensions = data.dims;
-                let image_downsized = data.downsized;
-                let image_size = data.size;
-                uploadItem.innerHTML = `Uploaded ${fileName}.`;
+                    // If response code is not 200, raise
+                    if (data.response == 201) {
+                        let buttons = createNotification("File has the same name as an existing file.", {
+                            "overwrite": "Overwrite",
+                            "cancel": "Cancel",
+                        });
+                        buttons.overwrite.id = "confirm-button";
+                        buttons.overwrite.addEventListener("click", () => overwriteFile(fileName, imageB64));
+                        buttons.cancel.id = "cancel-button";
+                        buttons.cancel.onclick = clearNotifications;
+                        return;
+                    }
+                    let image_dimensions = data.dims;
+                    let image_downsized = data.downsized;
+                    let image_size = data.size;
+                    uploadItem.innerHTML = `Uploaded ${fileName}.`;
 
-                // Append uploaded image(s) to gallery box
-                let galleryItem = createGalleryItem(fileName, image_downsized);
+                    // Append uploaded image(s) to gallery box
+                    let galleryItem = createGalleryItem(fileName, image_downsized);
                 })
                 .catch((error) => console.log(error));
 
@@ -375,6 +550,39 @@ function uploadEvent() {
         let uploadItem = createUploadItem(fileName);
 
     }
+}
+
+function deleteImages() {
+    buttons = createNotification("Are you sure?", {
+        "confirm": "Yes",
+        "cancel": "No"
+    });
+    buttons.confirm.id = "confirm-button";
+    buttons.confirm.addEventListener("click", () => {
+        let removedItems = [];
+        let item;
+        for (let _select of selected) {
+            item = _select.parentElement;
+            removedItems.push(item.getAttribute("data-content"));
+            item.remove();
+        }
+
+        // Add images to recently deleted
+        fetch("/archiveImages", {
+            method: "POST",
+            body: JSON.stringify({
+                images: removedItems
+            }),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+            })
+            .then(response => response.json())
+            .then(data => {})
+    });
+    buttons.cancel.id = "cancel-button";
+    buttons.cancel.onclick = clearNotifications;
+
 }
 
 window.addEventListener("load", (event) => {
@@ -397,9 +605,12 @@ window.addEventListener("load", (event) => {
     // Reset viewer on mouse down
     document.addEventListener("mousedown", () => {viewerActive = false;});
     
-    let body = document.getElementsByClassName("hero-body")[0];
+    body = document.getElementsByClassName("hero-body")[0];
     let menu = document.getElementById("contextMenu");
     body.appendChild(menu);
+
+    // More declaration
+    galleryBox = document.getElementById("gallery-box");
 
     let navbar = document.getElementsByClassName("navbar")[0];
     let galleryNav = document.getElementById("gallery-container");
@@ -422,6 +633,8 @@ window.addEventListener("load", (event) => {
     viewerImage = document.getElementById("viewer-img");
     viewerMenu = document.getElementById("viewer-menu");
     viewerResult = document.getElementById("viewer-zoom");
+    infoButton = document.getElementById("info-button");
+    infoPanel = document.getElementById("info-panel")
 
     viewer.addEventListener("click", (event) => closeViewer(event))
     body.appendChild(viewer);
@@ -439,4 +652,5 @@ window.addEventListener("load", (event) => {
     // Add callback function to upload button
     let uploadButton = document.getElementById("upload-button");
     uploadButton.addEventListener("change", () => uploadEvent());
+    uploadContainer = document.getElementById("upload");
 });

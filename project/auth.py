@@ -194,7 +194,9 @@ def upload_image():
     img = data["value"]
     filename = data["name"]
     user = current_user.username
-    
+
+    overwrite = bool("overwrite" in data.keys())
+
     extension = filename.split(".")[-1].lower()
 
     if not extension:
@@ -208,6 +210,29 @@ def upload_image():
 
     img_bytes = base64.b64decode(img)
 
+    same_image = Image.query.filter_by(name=filename, user=user).first()
+    if same_image:
+        if not overwrite:
+            # Check if the filename already exists, only if the overwrite option is False
+            return { "response": 201 }
+        else:
+            # Replace image data
+            same_image.value = img_bytes
+
+            if same_image.orientation == 8:
+                same_image.value = same_image.rotate_left()
+            db.session.commit()
+
+            return_data = {
+                "response": 200,
+                "name": filename,
+                "size": same_image.size,
+                "dims": same_image.dims,
+                "downsized": same_image.resize(240)
+            }
+
+            return jsonify(return_data)
+
     new_image = Image(name=filename, user=user, value=img_bytes)
     
     # Base64 Image is sometimes rotated 90 degrees clockwise.
@@ -218,9 +243,9 @@ def upload_image():
     db.session.add(new_image)
     db.session.commit()
 
-
     # Send response back with image information
     return_data = {
+        "response": 200,
         "name": filename,
         "size": new_image.size,
         "dims": new_image.dims,
@@ -231,11 +256,18 @@ def upload_image():
 
 @auth.route('/getImage', methods=['POST'])
 @login_required
-def getImage():
+def get_image():
     data = json.loads(request.data)
     filename = data["name"]
     username = current_user.username
 
     img = Image.query.filter_by(name=filename, user=username).first()
 
-    return jsonify({"base64": img.base64, "downsized": img.resize(img.dims[1]//2)})
+    return jsonify({"base64": img.base64, "downsized": img.resize(img.dims[1]//3), "metadata": img.get_metadata()})
+
+
+@auth.route('/archiveImages', methods=['POST'])
+@login_required
+def archive_images():
+    data = json.loads(request.data)
+    print(data)

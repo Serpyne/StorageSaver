@@ -11,11 +11,12 @@ from . import db
 from io import BytesIO
 from base64 import b64encode, b64decode
 
+import json
 import PIL
 import PIL.Image
+from PIL import TiffImagePlugin
 from PIL.Image import Exif
-
-ORIENTATION = 0x112 # 274
+from PIL.ExifTags import TAGS
 
 JPG_START = "data:image/jpeg;base64,"
 PNG_START = "data:image/png;base64,"
@@ -33,7 +34,8 @@ class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     user = db.Column(db.String)
-    value: bytes = db.Column(db.String)
+    value = db.Column(db.String)
+    exif = db.Column(db.String)
 
     @property
     def extension(self) -> str | bool:
@@ -50,6 +52,8 @@ class Image(db.Model):
         
     @property
     def bytesio(self) -> BytesIO:
+        if not self.extension:
+            self.value = JPG_SEQUENCE + self.value
         return BytesIO(self.value)
 
     @property
@@ -133,9 +137,19 @@ class Image(db.Model):
         """
         Get image metadata using python's Exif module.
         """
-        im = PIL.Image.open(self.bytesio)
-        return im.getexif()
+        # self.exif = self.image.getexif()
+        # self._metadata = self.exif
+        # <class 'PIL.Image.Exif'>
+
+        if self.exif != None:
+            return json.loads(self.exif)
+
+        img_exif = self.image.getexif()
+        data = {TAGS[key]: float(val) if isinstance(val, TiffImagePlugin.IFDRational) else val for key, val in img_exif.items() if key in TAGS}
+        self.exif = json.dumps(data)
+
+        return data
     
     @property
     def orientation(self) -> int:
-        return self.get_metadata().get(ORIENTATION)
+        return self.get_metadata().get("Orientation")

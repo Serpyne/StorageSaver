@@ -101,6 +101,19 @@ devlog:
         - Albums
         - Settings
         - About Us
+
+    30/07 18:12 - Added ability to change the lens size with mouse scroll-wheel.
+    Optimised by increasing the quality of the image when it is zoomed in enough.
+
+    30/07 20:33 - Added info panel to display information about the image.
+
+    30/07 22:46 - Added the ability to overwrite files with a confirmation prompt 
+
+    30/07 23:24 - Created the last routes that I want on the website:
+    [All files, file manager, albums, settings, about us].
+    About halfway there now, only 6 days left!
+    Looking to complete the image archiving and deletion system, and maybe I will
+    start work on the About Us page just to wrap up the day.
 """
 
 from flask import Blueprint, render_template, url_for, request
@@ -149,6 +162,11 @@ class ImageLoader:
     def load_image(self, image: Image):
         self.images[f"{image.id}:{image.name}"] = image.resize(height=240)
 
+@main.route('/all_files', methods=["GET"])
+@login_required
+def all_files():
+    ...
+
 @main.route('/gallery', methods=["GET"])
 @login_required
 def gallery():
@@ -166,3 +184,24 @@ def gallery():
     # print([f"{key}: {value[:16]}..." for key, value in image_json.items()])
 
     return render_template('gallery.html', images=image_json)
+
+@main.route('/file_manager', methods=["GET"])
+@login_required
+def file_manager():
+    ...
+
+@main.route('/albums', methods=["GET"])
+@login_required
+def albums():
+    ...
+
+@main.route('/recently_deleted', methods=["GET"])
+@login_required
+def recently_deleted():
+    ...
+
+@main.route('/about_us', methods=["GET"])
+@login_required
+def about_us():
+    ...
+
