@@ -53,3 +53,5 @@ def log(text, filename = ".log", include_datetime=True):
             text = f"{now} {text}\n"
 
         f.write(text)
+    
+    print(text)

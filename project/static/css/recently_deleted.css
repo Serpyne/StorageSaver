@@ -1,0 +1,50 @@
+
+td {
+    padding: 0.4rem
+}
+
+.file-item td {
+    border-color: #dbdbdb;
+    border-style: solid;
+    border-width: 1px 1px 1px 0;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+}
+
+.header-option div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.header-option:hover {
+    background: rgb(210, 210, 210);
+}
+
+#file-manager {
+    width: 100%;
+}
+
+/* Files */
+.thumbnail {
+    overflow: hidden;
+    height: 1rem;
+    padding-inline-end: .6rem;
+}
+
+.name {
+    font-weight: 500;
+}
+
+.date, .type, .size {
+    font-weight: 200;
+}
+
+.sort-arrow {
+    width: 1rem;
+    height: 1rem;
+    visibility: hidden;
+}

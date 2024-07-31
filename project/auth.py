@@ -6,13 +6,14 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_user, logout_user, login_required, current_user
 
 from .models import User, Image
-from .models import JPG_START, PNG_START
+from .models import JPG_START, PNG_START, DATE_FORMAT
 from . import db
 from .modules.functions import bitshift_hash, log
 
 from string import ascii_uppercase, digits
 import json
 import base64
+from datetime import datetime
 
 auth = Blueprint('auth', __name__)
 
@@ -191,65 +192,79 @@ def upload_image():
         return
 
     data = json.loads(request.data)
-    img = data["value"]
-    filename = data["name"]
-    user = current_user.username
 
     overwrite = bool("overwrite" in data.keys())
+    user = current_user.username
 
-    extension = filename.split(".")[-1].lower()
+    images = data["images"]
 
-    if not extension:
-        return Response("Filename must be .png, .jpg or .jpeg", status=201, mimetype='application/json')
-    
-    if extension == "jpg":
-        img = img[len(JPG_START):]
+    image_objects = []
 
-    elif extension == "png":
-        img = img[len(PNG_START):]
+    existing_files = []
+    for image in images:
+        img = image["value"]
+        filename: str = image["name"]
 
-    img_bytes = base64.b64decode(img)
+        extension = filename.split(".")[-1].upper()
+        filename = filename[:-len(extension)] + extension
 
-    same_image = Image.query.filter_by(name=filename, user=user).first()
-    if same_image:
-        if not overwrite:
-            # Check if the filename already exists, only if the overwrite option is False
-            return { "response": 201 }
+        if not extension:
+            log("Wrong file format.")
+            return Response("Filename must be .PNG, .JPG or .JPEG", status=201, mimetype='application/json')
+        
+        if extension in ["JPG", "JPEG"]:
+            img = img[len(JPG_START):]
+
+        elif extension == "PNG":
+            img = img[len(PNG_START):]
+
+        img_bytes = base64.b64decode(img)
+
+        image_object = Image.query.filter_by(name=filename, user=user).first()
+        if image_object:
+            if not overwrite:
+                # Check if the filename already exists, only if the overwrite option is False
+                existing_files.append(image_object)
+            else:
+                # Replace image data
+                db.session.delete(image_object)
+                image_object = Image(name=filename, user=user, value=img_bytes)
+                image_object.set_property("date_uploaded", datetime.now().strftime(DATE_FORMAT))
+                
         else:
-            # Replace image data
-            same_image.value = img_bytes
+            image_object = Image(name=filename, user=user, value=img_bytes)
+            image_object.set_property("date_uploaded", datetime.now().strftime(DATE_FORMAT))
+            
+        # Base64 Image is sometimes rotated 90 degrees clockwise.
+        # Rotate it back if the orientation is that.
+        if image_object.orientation == 8:
+            print("rotated")
+            image_object.value = image_object.rotate_left()
 
-            if same_image.orientation == 8:
-                same_image.value = same_image.rotate_left()
-            db.session.commit()
+        image_objects.append(image_object)
 
-            return_data = {
-                "response": 200,
-                "name": filename,
-                "size": same_image.size,
-                "dims": same_image.dims,
-                "downsized": same_image.resize(240)
-            }
-
-            return jsonify(return_data)
-
-    new_image = Image(name=filename, user=user, value=img_bytes)
-    
-    # Base64 Image is sometimes rotated 90 degrees clockwise.
-    # Rotate it back if the orientation is that.
-    if new_image.orientation == 8:
-        new_image.value = new_image.rotate_left()
-
-    db.session.add(new_image)
-    db.session.commit()
+    if existing_files:
+        files = [file.name for file in existing_files]
+        log(f"File(s) already exists: {', '.join(files)}")
+        return { "response": 201, "files": files}
 
     # Send response back with image information
+    return_images = []
+    for image_obj in image_objects:
+        return_images.append(
+            {
+                "name": image_obj.name,
+                "size": image_obj.size,
+                "dims": image_obj.dims,
+                "downsized": image_obj.resize(240)
+            } 
+        )
+        db.session.add(image_obj)
+    db.session.commit()
+
     return_data = {
         "response": 200,
-        "name": filename,
-        "size": new_image.size,
-        "dims": new_image.dims,
-        "downsized": new_image.resize(240)
+        "images": return_images
     }
 
     return jsonify(return_data)
@@ -263,11 +278,19 @@ def get_image():
 
     img = Image.query.filter_by(name=filename, user=username).first()
 
-    return jsonify({"base64": img.base64, "downsized": img.resize(img.dims[1]//3), "metadata": img.get_metadata()})
+    max_height = min(1280, img.dims[1]//2)
+    return jsonify({"base64": img.base64, "downsized": img.resize(max_height), "metadata": img.get_metadata()})
 
 
 @auth.route('/archiveImages', methods=['POST'])
 @login_required
 def archive_images():
     data = json.loads(request.data)
-    print(data)
+
+    user = current_user.username
+    for filename in data["images"]:
+        img = Image.query.filter_by(name=filename, user=user).first()
+        img.set_property("archived", 1)
+    db.session.commit()
+
+    return jsonify({"response": 200})

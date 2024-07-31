@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/recently_deleted.css') }}">
+  <script src="{{ url_for('static', filename='js/recently_deleted.js') }}" type="text/javascript"></script>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">Recently Deleted</h1>
+<div id="file-container" class="box">
+  <table id="file-manager" class="container">
+    <tr class="files-header">
+      <td id="sort-name" class="header-option" onclick="update(NAME)"><div>Name</div></td>
+      <td id="sort-date" class="header-option" onclick="update('date')"><div><h1>Date Taken</h1></div></td>
+      <td id="sort-type" class="header-option" onclick="update(TYPE)"><div>Type</div></td>
+      <td id="sort-size" class="header-option" onclick="update(SIZE)"><div>Size</div></td>
+    </tr>
+  </table>
+</div>
+<script type="text/javascript">
+  files = {{ files | tojson }};
+</script>
+{% endblock %}

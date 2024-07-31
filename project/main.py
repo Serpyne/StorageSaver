@@ -114,6 +114,29 @@ devlog:
     About halfway there now, only 6 days left!
     Looking to complete the image archiving and deletion system, and maybe I will
     start work on the About Us page just to wrap up the day.
+
+    31/07 3:21 - Started worked on a recently deleted section (the beginnings of
+    the file manager system) complete with sorting by name, type, and file
+    size. It also shows a little 32x32 thumbnail (which I added a method [Image.thumbnail]
+    to the Image model to crop it to a square).
+    Looking forward, I want to:
+        - add sorting by date uploaded, date of image
+        - display date and size in the appropriate format.
+        - Find a way to make a distinction between files and images,
+            while maintaining the same model for the DB structure.
+
+    31/07 18:34 - Reading files out of sync so not all files were being added
+    before the upload request was sent. 
+
+    31/07 21:15 - Added content fit for the image viewer and the user can now
+    upload several images at a time. I have also implemented a loading icon when
+    an image is being uploaded.
+    I would like to optimise load times of the gallery as it takes upwards of
+    six seconds to load 20+ images. Also revamping uploading and overwriting to
+    fit the several files thing.
+
+    31/07 22:46 - Fixed some style issues, added fading out to the upload queue
+    notifications, and fixed the overwriting not deleting the previous image.
 """
 
 from flask import Blueprint, render_template, url_for, request
@@ -144,12 +167,16 @@ class ImageLoader:
     def __init__(self):
         self.images = {}
 
-    def load(self):
+    def load(self, **keys):
         threads = []
 
         user_images = Image.query.filter(Image.user == current_user.username)
         for image in user_images:
-            threads.append(Thread(target=self.load_image, args=(image,)))
+            for key in keys:
+                if image.get_property(key) != keys[key]:
+                    break
+            else:
+                threads.append(Thread(target=self.load_image, args=(image,)))
 
         for thread in threads:
             thread.start()
@@ -179,7 +206,7 @@ def gallery():
         return render_template('viewer.html', data=img)
 
     images = ImageLoader()
-    image_json = images.load()
+    image_json = images.load(archived=None)
 
     # print([f"{key}: {value[:16]}..." for key, value in image_json.items()])
 
@@ -198,10 +225,20 @@ def albums():
 @main.route('/recently_deleted', methods=["GET"])
 @login_required
 def recently_deleted():
-    ...
+    files = Image.query.filter_by(user=current_user.username).all()
+    files = [file for file in files if file.get_property("archived")]
+    files = [{
+        "name": file.name,
+        "date_taken": file.date,
+        "date_uploaded": file.get_property("date_uploaded"),
+        "type": file.type,
+        "size": file.size,
+        "src": file.thumbnail
+    } for file in files]
+
+    return render_template("recently_deleted.html", files=files)
 
 @main.route('/about_us', methods=["GET"])
 @login_required
 def about_us():
     ...
-

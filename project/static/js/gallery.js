@@ -334,8 +334,8 @@ function closeViewer(/*PointerEvent*/event, /*bool*/force = false) {
         // Only close if mouse click was on the background
         if (mouseInElement(viewerImage, event))
             return;
-        if (event.target !== viewer)
-            return;
+        // if (event.target !== viewer && event.target !== viewerImage.parentElement)
+        //     return;
 
         // If viewer is active, don't close
         if (viewerActive)
@@ -412,45 +412,34 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
     return galleryItem;
 }
 
+function removeUploadItem(/*HTMLElement*/uploadItem) {
+    uploadItem.style.transition = "opacity 1.5s";
+    uploadItem.style.setProperty("-webkit-transition", "opacity 1.5s");
+    uploadItem.style.opacity = 0;
+    setTimeout("uploadItem.remove();", 1500);
+}
+
 function createUploadItem(/*string*/fileName) {
     /*
     Creates and appends an upload text display to the upload queue called "upload-queue"
     */
-    uploadItem = document.createElement("h1");
+    uploadItem = document.createElement("div");
     uploadItem.className = "upload-item";
-    uploadItem.innerHTML = `Uploading '${fileName}'...`;
+
+    let loading = document.createElement("img");
+    loading.className = "loading-image";
+    loading.src = "static/icons/loading.gif";
+    let uploadText = document.createElement("h1");
+    uploadText.innerHTML = `Uploading '${fileName}'...`;
+    uploadItem.appendChild(loading);
+    uploadItem.appendChild(uploadText);
 
     let uploadQueue = document.getElementById("upload-queue");
     uploadQueue.appendChild(uploadItem);
 
+    setTimeout("removeUploadItem(uploadItem);", 1000 * 15); // After 15 seconds, delete upload item
+
     return uploadItem;
-}
-
-function overwriteFile(/*string*/filename, /*string*/value) {
-    fetch("/uploadImage", {
-        method: "POST",
-        body: JSON.stringify({
-            name: filename,
-            value: value,
-            overwrite: true
-        }),
-        headers: {
-            "Content-type": "application/json; charset=UTF-8"
-        }
-        })
-        .then(response => response.json())
-        .then(data => {
-            uploadItem.innerHTML = `Overwrote ${filename}.`;
-            
-            let image_downsized = data.downsized;
-            // Replace image with overwritten file
-            for (let item of galleryBox.children) 
-                if (item.getAttribute("data-content") === filename)
-                    item.firstElementChild.src = image_downsized;
-        })
-        .catch((error) => console.log(error));
-
-    clearNotifications();
 }
 
 function clearNotifications() {
@@ -488,66 +477,106 @@ function createNotification(/*string*/text, /*json*/options) {
     return buttons;
 }
 
+function sendUploadRequest(/*array*/images, /*bool*/overwrite) {
+    // Make request to backend to upload images to database
+    let data = {images: images};
+    let uploads = [];
+    let uploadsFormatted;
+    for (let image of data.images) {
+        uploads.push(image.name)
+    }
+    uploadsFormatted = uploads.join(", ");
+    if (overwrite)
+        data.overwrite = 1;
+    else
+        createUploadItem(uploadsFormatted);
+
+
+    fetch("/uploadImage", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+            "Content-type": "application/json; charset=UTF-8"
+        }
+        // On response
+        })
+        .then(response => response.json())
+        // Expect data from response {response<int>, id, name, size, dims}
+        .then(data => {
+            // If response code is not 200, raise
+            if (data.response == 201) {
+                // Display overwrite notifcation
+                let ending = ''; if (data.files.length > 1) {ending = "s"}
+                let buttons = createNotification(`File${ending} with same name as existing file: ${data.files.join(", ")}`, {
+                    "overwrite": "Overwrite",
+                    "cancel": "Cancel",
+                });
+                buttons.overwrite.id = "confirm-button";
+                buttons.overwrite.addEventListener("click", () => {
+                    sendUploadRequest(images, overwrite=true);
+                    clearNotifications();
+                });
+                buttons.cancel.id = "cancel-button";
+                buttons.cancel.onclick = clearNotifications;
+                return;
+            }
+
+            uploadItem.innerHTML = `Uploaded ${uploadsFormatted}.`;
+
+            for (let item of galleryBox.getElementsByClassName("item-overlay")) {
+                let name = item.getAttribute("data-content");
+                for (let upload of uploads) {
+                    if (name.toLowerCase() === upload.toLowerCase())
+                        item.remove();
+                    break;
+                }
+            }
+
+            for (let image of data.images) {
+                // Append uploaded image(s) to gallery box, plus exclude any with the same filename
+                galleryItem = createGalleryItem(image.name, image.downsized);
+            }
+        })
+        .catch((error) => console.log(error));
+}
+
 function uploadEvent() {
     // Callback for the upload button
     let uploadButton = document.getElementById("upload-button");
     let url = uploadButton.value;
     let ext = url.substring(url.lastIndexOf('.') + 1).toLowerCase();
     if (uploadButton.files && uploadButton.files[0] && (ext == "png" || ext == "jpeg" || ext == "jpg")) {
-        var reader = new FileReader();
+        let images = [];
 
-        let fileName = uploadButton.files[0].name;
-        
-        reader.onload = function (e) {
-            let imageB64 = e.target.result;
+        let uploadCount = 0;
 
-            // Make request to backend to upload image to database
-            fetch("/uploadImage", {
-                method: "POST",
-                body: JSON.stringify({
-                    name: fileName,
+        let reader;
+        let fileJson;
+        let imageB64;
+        for (let i = 0; i < uploadButton.files.length; i++) {
+            reader = new FileReader();
+            let file = uploadButton.files[i];
+            reader.onload = function (e) {
+                imageB64 = e.target.result;
+                fileJson = {
+                    name: file.name,
                     value: imageB64
-                }),
-                headers: {
-                    "Content-type": "application/json; charset=UTF-8"
-                }
-                // On response
-                })
-                .then(response => response.json())
-                // Expect data from response {response<int>, id, name, size, dims}
-                .then(data => {
-                    // If response code is not 200, raise
-                    if (data.response == 201) {
-                        let buttons = createNotification("File has the same name as an existing file.", {
-                            "overwrite": "Overwrite",
-                            "cancel": "Cancel",
-                        });
-                        buttons.overwrite.id = "confirm-button";
-                        buttons.overwrite.addEventListener("click", () => overwriteFile(fileName, imageB64));
-                        buttons.cancel.id = "cancel-button";
-                        buttons.cancel.onclick = clearNotifications;
-                        return;
-                    }
-                    let image_dimensions = data.dims;
-                    let image_downsized = data.downsized;
-                    let image_size = data.size;
-                    uploadItem.innerHTML = `Uploaded ${fileName}.`;
+                };
+                images.push(fileJson);
+                
+                uploadCount++;
 
-                    // Append uploaded image(s) to gallery box
-                    let galleryItem = createGalleryItem(fileName, image_downsized);
-                })
-                .catch((error) => console.log(error));
-
-            // If "There's nothing here.. Add something?" label is still there (must be zero images), then it is deleted.
-            let labelNothing = document.getElementById("label-nothing");
-            if (labelNothing)
-                labelNothing.remove();
+                // Once last file is read, make upload request to backend
+                if (uploadCount === uploadButton.files.length)
+                    sendUploadRequest(images);
+            };
+            reader.readAsDataURL(file);
         }
 
-        reader.readAsDataURL(uploadButton.files[0]);
-
-        // Show user that image has been uploaded
-        let uploadItem = createUploadItem(fileName);
+        // If "There's nothing here.. Add something?" label is still there (must be zero images), then it is deleted.
+        let labelNothing = document.getElementById("label-nothing");
+        if (labelNothing)
+            labelNothing.remove();
 
     }
 }
@@ -579,6 +608,8 @@ function deleteImages() {
             })
             .then(response => response.json())
             .then(data => {})
+
+        clearNotifications();
     });
     buttons.cancel.id = "cancel-button";
     buttons.cancel.onclick = clearNotifications;
@@ -638,6 +669,7 @@ window.addEventListener("load", (event) => {
 
     viewer.addEventListener("click", (event) => closeViewer(event))
     body.appendChild(viewer);
+    viewerImage.parentElement.addEventListener("click", (event) => closeViewer(event));
 
     imageZoom();
 

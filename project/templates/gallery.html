@@ -27,7 +27,7 @@
         <img id="upload-image"  title="Upload Media" class="menu-button" src="{{ url_for('static', filename='icons/uploadButton.png')}}" alt="Upload" />
       </label>
     </div>
-    <input type="file" id="upload-button" title="Upload" accept="image/png, image/jpeg" />
+    <input type="file" id="upload-button" title="Upload" accept="image/png, image/jpeg" multiple />
 
     <div id="selection-buttons">
       <div title="Select All" id="select-all-button" class="selection-button" onclick="selectAll()">
@@ -49,7 +49,9 @@
 <div class="container">
   <div id="viewer-menu" class="viewer-menu"></div>
   <div id="viewer">
-    <img id="viewer-img" class="viewer-img" src="" alt="Viewer" />
+    <div style="height: 90%; width: 60%; display: grid; resize: both;">
+      <img id="viewer-img" class="viewer-img" src="" alt="Viewer" />
+    </div>
     <div id="viewer-zoom" class="viewer-img-zoom" alt="Result"></div>
     <div id="info-panel" class="info-panel" style="display: none;"></div>
   </div>

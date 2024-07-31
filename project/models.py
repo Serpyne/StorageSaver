@@ -10,6 +10,7 @@ from flask_login import UserMixin
 from . import db
 from io import BytesIO
 from base64 import b64encode, b64decode
+from datetime import datetime
 
 import json
 import PIL
@@ -18,11 +19,25 @@ from PIL import TiffImagePlugin
 from PIL.Image import Exif
 from PIL.ExifTags import TAGS
 
+TYPES = {
+    "JPG": "JPG File",
+    "JPEG": "JPEG File",
+    "PNG": "PNG File",
+    "GIF": "GIF File",
+    "TXT": "Text Document",
+    "DOC": "Word Document",
+    "DOCX": "Word Document",
+    "PDF": "Portable Document Format",
+    "other": "File"
+}
+
 JPG_START = "data:image/jpeg;base64,"
 PNG_START = "data:image/png;base64,"
 
 PNG_SEQUENCE = b"\x89PNG", b"\xaeB`\x82"
 JPG_SEQUENCE = b"\xff\xd8"
+
+DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -36,17 +51,39 @@ class Image(db.Model):
     user = db.Column(db.String)
     value = db.Column(db.String)
     exif = db.Column(db.String)
+    properties = db.Column(db.String)
+
+    def set_property(self, key: str, value: str) -> None:
+        if not self.properties:
+            self.properties = "{}"
+
+        self.properties = json.loads(self.properties)
+        self.properties[key] = value
+        self.properties = json.dumps(self.properties)
+
+        db.session.commit()
+
+    def get_property(self, key: str) -> str | None:
+        if not self.properties:
+            return None
+        
+        properties = json.loads(self.properties)
+
+        if key not in properties:
+            return None
+        
+        return properties[key]
 
     @property
     def extension(self) -> str | bool:
         """
-        Returns .png or .jpeg for extensions. Returns False if neither match.
+        Returns .PNG or .JPEG for extensions. Returns False if neither match.
         """
 
         if self.value[:4] == PNG_SEQUENCE[0] and self.value[-4:] == PNG_SEQUENCE[1]:
-            return ".png"
+            return ".PNG"
         elif self.value[:2] == JPG_SEQUENCE:
-            return ".jpeg"
+            return ".JPEG"
         
         return False
         
@@ -69,14 +106,31 @@ class Image(db.Model):
         return self.image.size
     
     @property
+    def date(self) -> tuple[int]:
+        md = self.get_metadata()
+        if "DateTime" in md:
+            date_obj = datetime.strptime(md["DateTime"], "%Y:%m:%d %H:%M:%S")
+            return date_obj.strftime(DATE_FORMAT)
+        else:
+            return None
+    
+    @property
+    def type(self) -> str:
+        ext = self.extension[1:]
+        if ext in TYPES:
+            return TYPES[ext]
+        else:
+            return TYPES["other"]
+
+    @property
     def base64(self) -> str | bool:
-        if self.extension == ".png":
+        if self.extension == ".PNG":
             return PNG_START + b64encode(self.value).decode("utf-8")
-        elif self.extension == ".jpeg":
+        elif self.extension == ".JPEG":
             return JPG_START + b64encode(self.value).decode("utf-8")
         
         return False
-    
+
     def resize(self, height: int, sampling = PIL.Image.Resampling.BICUBIC) -> str:
         """
         Resize the image to a specified height.
@@ -93,11 +147,32 @@ class Image(db.Model):
         im_downsized.save(buffered, format=extension[1:]) # Stripping the period off of the file extension
         img_str = b64encode(buffered.getvalue())
 
-        if extension == ".png":
+        if extension == ".PNG":
             return PNG_START + img_str.decode("utf-8")
-        elif extension == ".jpeg":
+        elif extension == ".JPEG":
             return JPG_START + img_str.decode("utf-8")
     
+    @property
+    def thumbnail(self):
+        # Returns a 32x32 cropped version of the image.
+        dims = self.dims
+        height = int(dims[1] * 32 // dims[0])
+        im_downsized = self.image.resize((32, height), PIL.Image.Resampling.BICUBIC)
+        top = height // 2 - 16
+        bottom = top + 32
+        im_cropped = im_downsized.crop((0, top, 32, bottom))
+
+        extension = self.extension
+
+        buffered = BytesIO()
+        im_cropped.save(buffered, format=extension[1:]) # Stripping the period off of the file extension
+        img_str = b64encode(buffered.getvalue())
+
+        if extension == ".PNG":
+            return PNG_START + img_str.decode("utf-8")
+        elif extension == ".JPEG":
+            return JPG_START + img_str.decode("utf-8")
+        
     def rotate_left(self) -> bytes:
         original = self.image
         original = original.rotate(90, expand=True)

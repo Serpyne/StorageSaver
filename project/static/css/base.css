@@ -1,13 +1,10 @@
 
-div {
-    font-size: 2rem;
-}
-
 #menu-button {
     max-width: 100%;
     max-height: 100%;
 
-    border-radius: 8px;
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
     border-style: none;
     box-sizing: border-box;
     cursor: pointer;
@@ -33,7 +30,7 @@ div {
 }
 
 #menu-container {
-    position: absolute;
+    position: fixed;
 }
 
 #menu-button:hover {
@@ -54,7 +51,7 @@ div {
     font-size: 1.6rem;
 }
 
-.sidebar-button:hover {
+.sidebar-button:hover, .sidebar-button:focus {
     background: #0b907c;
 }
 
@@ -63,13 +60,16 @@ div {
     flex-direction: column;
     flex-shrink: 0;
     position: relative;
+    white-space: nowrap;
     
     max-width: 0;
-    max-height: 0;
+    max-height: 50rem;
     overflow: hidden;
     background: #00b89c;
     border-radius: 0.5rem;
-    padding: 0;
+    border-top-right-radius: 0;
+    padding: 1rem;
+    padding-inline: 0;
     
     transition: all 0.5s;
     -webkit-transition: all 0.5s;
