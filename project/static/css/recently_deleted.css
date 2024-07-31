@@ -10,6 +10,7 @@ td {
     overflow: hidden;
     text-align: left;
     text-overflow: ellipsis;
+    width: 25%;
 }
 
 .header-option div {
@@ -47,4 +48,15 @@ td {
     width: 1rem;
     height: 1rem;
     visibility: hidden;
+}
+
+.cell-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.name-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

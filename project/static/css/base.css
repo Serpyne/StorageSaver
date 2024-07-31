@@ -1,3 +1,19 @@
+::-webkit-scrollbar {
+    width: 1.4rem;
+}
+
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0px 0px 20px rgb(0, 184, 156);;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ffffff;
+    border-radius: 0.45rem;
+}
+
+html {
+    overflow: auto;
+}
 
 #menu-button {
     max-width: 100%;
@@ -74,3 +90,31 @@
     transition: all 0.5s;
     -webkit-transition: all 0.5s;
 }
+
+/* make sure notification overlay is on top of navigation buttons */
+.navbar {
+    z-index: 6;
+}
+
+.notification-overlay {
+    background: rgba(0, 0, 0, 0.6);
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 7;
+  }
+  .notification {
+    background: rgba(255, 255, 255);
+    display: flex;
+    border-radius: 0.5rem;
+    flex-direction: column;
+    align-items: center;
+    margin: auto;
+    padding: 1rem;
+  }
+  

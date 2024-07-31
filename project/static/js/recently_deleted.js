@@ -67,7 +67,10 @@ function displayFiles(/*array*/files) {
     for (let i = 1; i < num; i++) {
         fileManagerBody.children[1].remove();
     }
+
+    let label;
     let newFile;
+    let textElement;
     for (let file of files) {
         newFile = fileManagerBody.insertRow();
         newFile.className = "file-item";
@@ -83,17 +86,37 @@ function displayFiles(/*array*/files) {
         // Append each of the file properties
         for (let text of [NAME, date_type, TYPE, SIZE]) {
             let cell = newFile.insertCell();
+
+            cellContainer = document.createElement("div");
+            cellContainer.className = "cell-container";
+
+            cell.className = text;
+            label = file[text];
+            textElement = document.createElement("h1");
+            textElement.textContent = label;
+            textElement.className = "name-label";
+
             if (text === NAME) {
                 img = document.createElement("img");
                 img.className = "thumbnail";
                 img.src = file.src;
-                cell.appendChild(img);
+                cellContainer.appendChild(img);
             }
-            cell.className = text;
-            label = file[text];
+
             if (text === SIZE)
-                label = formatSize(label);
-            cell.appendChild(document.createTextNode(label));
+                label = textElement.textContent = formatSize(label);
+
+            if (text === date_type) {
+                if (label == null) 
+                    label = textElement.textContent = "N/A";
+                else {
+                    textElement.textContent = formatDate(label);
+                }
+            }
+            cell.title = label;
+
+            cellContainer.appendChild(textElement);
+            cell.appendChild(cellContainer);
         }
     }
     
@@ -120,6 +143,11 @@ function formatSize(/*int*/size) {
         suffix = "GB";
     }
     return `${(Math.trunc(size * mult) * .1).toFixed(1)} ${suffix}`;
+}
+
+function formatDate(/*string*/dateString) {
+    let formattedDate = new Date(Date.parse(dateString));
+    return formattedDate.toDateString();
 }
 
 let sortName;

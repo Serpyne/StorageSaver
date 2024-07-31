@@ -97,8 +97,8 @@ devlog:
     and when an item is viewed, the menu is closed.
     What navigation to add next?
         - All files
-        - File manager
-        - Albums
+        - File manager        *
+        - Albums              *
         - Settings
         - About Us
 
@@ -120,8 +120,8 @@ devlog:
     size. It also shows a little 32x32 thumbnail (which I added a method [Image.thumbnail]
     to the Image model to crop it to a square).
     Looking forward, I want to:
-        - add sorting by date uploaded, date of image
-        - display date and size in the appropriate format.
+        - add sorting by date uploaded, date of image (TICK)
+        - display date and size in the appropriate format. 
         - Find a way to make a distinction between files and images,
             while maintaining the same model for the DB structure.
 
@@ -137,6 +137,9 @@ devlog:
 
     31/07 22:46 - Fixed some style issues, added fading out to the upload queue
     notifications, and fixed the overwriting not deleting the previous image.
+    Size in file manager (recently delete) is formatted to be bytes, KB, MB, or GB.
+
+    31/07 23:25 - Fixed scrolling and elements moving around, changed scrollbar.
 """
 
 from flask import Blueprint, render_template, url_for, request
