@@ -140,13 +140,16 @@ devlog:
     Size in file manager (recently delete) is formatted to be bytes, KB, MB, or GB.
 
     31/07 23:25 - Fixed scrolling and elements moving around, changed scrollbar.
+    
+    01/08 15:49 - getElementFromFileName is currently linear search, could
+    implement binary search instead.
 """
 
 from flask import Blueprint, render_template, url_for, request
 from flask_login import login_required, current_user
 
 from . import db
-from .models import Image
+from .models import File
 
 from time import perf_counter
 from threading import Thread
@@ -173,7 +176,7 @@ class ImageLoader:
     def load(self, **keys):
         threads = []
 
-        user_images = Image.query.filter(Image.user == current_user.username)
+        user_images = File.query.filter(File.user == current_user.username)
         for image in user_images:
             for key in keys:
                 if image.get_property(key) != keys[key]:
@@ -189,7 +192,7 @@ class ImageLoader:
 
         return self.images
 
-    def load_image(self, image: Image):
+    def load_image(self, image: File):
         self.images[f"{image.id}:{image.name}"] = image.resize(height=240)
 
 @main.route('/all_files', methods=["GET"])
@@ -228,7 +231,7 @@ def albums():
 @main.route('/recently_deleted', methods=["GET"])
 @login_required
 def recently_deleted():
-    files = Image.query.filter_by(user=current_user.username).all()
+    files = File.query.filter_by(user=current_user.username).all()
     files = [file for file in files if file.get_property("archived")]
     files = [{
         "name": file.name,

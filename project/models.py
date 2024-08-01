@@ -45,7 +45,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(100))
     username = db.Column(db.String(1000), unique=True)
 
-class Image(db.Model):
+class File(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     user = db.Column(db.String)
@@ -73,6 +73,20 @@ class Image(db.Model):
             return None
         
         return properties[key]
+
+    def remove_property(self, key: str) -> None:
+        if not self.properties:
+            return
+        
+        properties = json.loads(self.properties)
+
+        if key not in properties:
+            return
+        
+        del properties[key]
+        self.properties = json.dumps(properties)
+
+        db.session.commit()
 
     @property
     def extension(self) -> str | bool:

@@ -107,8 +107,8 @@ html {
     align-items: center;
     justify-content: center;
     z-index: 7;
-  }
-  .notification {
+}
+.notification {
     background: rgba(255, 255, 255);
     display: flex;
     border-radius: 0.5rem;
@@ -116,5 +116,30 @@ html {
     align-items: center;
     margin: auto;
     padding: 1rem;
-  }
-  
+}
+
+#confirm-button {
+  background: #b8b2b2;
+}
+#confirm-button:hover {
+  background: #7e7e7e;
+}
+
+#cancel-button {
+  background: #00b89c;
+}
+#cancel-button:hover {
+  background: #09907b;
+}
+
+.row {
+  display: flex;
+  padding: 0.5rem;
+  justify-content: center;
+}
+
+.row h1 {
+  margin: 1rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+}

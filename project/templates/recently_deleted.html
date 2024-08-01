@@ -6,18 +6,43 @@
 {% endblock %}
 
 {% block content %}
+
+<div id="file-options" class="file-options">
+  <div id="file-count" class="file-option">
+    <h1>Files Selected:</h1>
+  </div>
+
+  <div title="Restore" id="restore-button" class="file-option-button" onclick="restoreFiles()">
+    <img src="{{ url_for('static', filename='icons/undo.png')}}" alt="Restore" />
+    <h1 class="file-option-button-label">Restore</h1>
+  </div>
+
+  <div title="Select All" id="select-all-button" class="file-option-button" onclick="selectAll()">
+    <img src="{{ url_for('static', filename='icons/selectAll.png')}}" style="display: inline-block;" alt="Select all" />
+    <h1 class="file-option-button-label">Select All</h1>
+  </div>
+
+  <div title="Deselect All" id="deselect-all-button" class="file-option-button" onclick="deselectAll()">
+    <img src="{{ url_for('static', filename='icons/blackCross.png')}}" alt="Close selection" />
+  </div>
+
+  <div title="Delete" id="delete-button" class="file-option-button" onclick="deleteImages()">
+    <img src="{{ url_for('static', filename='icons/deleteButton.png')}}" alt="Delete" />
+  </div>
+</div>
+
 <h1 class="title">Recently Deleted</h1>
 <div id="file-container" class="box">
   <table id="file-manager" class="container">
     <tr class="files-header">
       <td title="Sort by File Name" id="sort-name" class="header-option" onclick="update(NAME)"><div>Name</div></td>
-      <td title="Sort by Date Taken/Date Uploaded" id="sort-date" class="header-option" onclick="update('date')"><div><h1>Date Taken</h1></div></td>
+      <td title="Sort by Date Taken/Date Uploaded" id="sort-date" class="header-option" onclick="update('date')"><div><h1>Date Uploaded</h1></div></td>
       <td title="Sort by File Type" id="sort-type" class="header-option" onclick="update(TYPE)"><div>Type</div></td>
       <td title="Sort by File Size" id="sort-size" class="header-option" onclick="update(SIZE)"><div>Size</div></td>
     </tr>
   </table>
 </div>
 <script type="text/javascript">
-  files = {{ files | tojson }};
+  allFiles = {{ files | tojson }};
 </script>
 {% endblock %}

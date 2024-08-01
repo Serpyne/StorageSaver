@@ -2,7 +2,6 @@
 // Declare HTML elements on load
 
 let body;
-let notification;
 
 let viewer;
 let viewerImage;
@@ -43,6 +42,7 @@ function selectEvent(selectButton) {
 
     checkSelected();
 }
+
 let selected = [];
 function checkSelected() {
     // If there are any selected items, then display the select button on all items.
@@ -442,41 +442,6 @@ function createUploadItem(/*string*/fileName) {
     return uploadItem;
 }
 
-function clearNotifications() {
-    let notifications = document.getElementsByClassName("notification-overlay");
-    for (let _notification of notifications)
-        _notification.remove();
-}
-
-function createNotification(/*string*/text, /*json*/options) {
-
-    notification = document.createElement("div");
-
-    notification.className = "notification-overlay";
-    let prompt = document.createElement("div");
-    notification.appendChild(prompt);
-    prompt.className = "notification";
-    prompt.innerHTML = `<h1 style='color: black;'>${text}</h1>`;
-
-    let buttonsDiv = document.createElement("div");
-    buttonsDiv.className = "row";
-
-    let buttons = {};
-
-    for (let option in options) {
-        let button = document.createElement("h1");
-        button.className = "notification-button";
-        button.innerHTML = options[option];
-        buttons[option] = button;
-        buttonsDiv.appendChild(button);
-    }
-    prompt.appendChild(buttonsDiv);
-
-    document.getElementById("top-level").appendChild(notification);
-
-    return buttons;
-}
-
 function sendUploadRequest(/*array*/images, /*bool*/overwrite) {
     // Make request to backend to upload images to database
     let data = {images: images};
@@ -597,7 +562,7 @@ function deleteImages() {
         }
 
         // Add images to recently deleted
-        fetch("/archiveImages", {
+        fetch("/archiveFiles", {
             method: "POST",
             body: JSON.stringify({
                 images: removedItems

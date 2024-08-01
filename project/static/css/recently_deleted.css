@@ -3,6 +3,9 @@ td {
     padding: 0.4rem
 }
 
+.file-item:hover {
+    background: rgb(210, 210, 210);
+}
 .file-item td {
     border-color: #dbdbdb;
     border-style: solid;
@@ -59,4 +62,48 @@ td {
 .name-label {
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.file-options {
+    position: fixed;
+    top: 0;
+    right: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    background: #efefef;
+    border-radius: 0.5rem;
+    display: none;
+}
+
+.file-options * {
+    margin: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+.file-option-button, .file-option {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+}
+
+.file-option-button:hover {
+    background: rgb(177, 177, 177);
+}
+
+.file-option-button * {
+    margin: 0 auto;
+    color: black;
+    font-size: large;
+    font-weight: 500;
+}
+
+#file-count {
+    display: flex;   
+}
+#file-count h1 {
+    font-size: larger;
+    font-weight: 600;
+    color: black;
+    padding: 2rem;
 }

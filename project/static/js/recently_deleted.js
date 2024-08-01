@@ -1,5 +1,5 @@
 
-let files;
+let allFiles;
 
 // Declare sorting constants
 const NAME = "name";
@@ -14,6 +14,7 @@ const DESCENDING = 0x19;
 // Declare HTML Elements
 let fileManager;
 let fileManagerBody;
+let fileCount;
 
 /*
 Format:
@@ -27,7 +28,6 @@ Format:
     },
 */
 function sortFiles(/*array*/files, /*string*/sortBy, /*const*/sortDirection) {
-    console.log(files, sortBy, sortDirection);
     // Takes in a list of files where each file is in the format {name<string>, date<string>, type<string>, size<int>, src<string>}
     // Returns the sorted list in the same format.
     
@@ -39,12 +39,23 @@ function sortFiles(/*array*/files, /*string*/sortBy, /*const*/sortDirection) {
     let sorted;
     if (sortBy === SIZE)
         sorted = files.sort(function(a, b) {return a.size - b.size});
+
     else if (sortBy === DATE_TAKEN) {
-        sorted = files.sort(function(a, b) {return Date.parse(a["date_taken"]) - Date.parse(b["date_taken"])});
+        sorted = files.sort(function(a, b) {
+            if (a["date_taken"] === b["date_taken"])
+                return a.name.localeCompare(b.name)
+            return Date.parse(a["date_taken"]) - Date.parse(b["date_taken"])
+        });
     }
+
     else if (sortBy === DATE_UPLOADED) {
-        sorted = files.sort(function(a, b) {return Date.parse(a["date_uploaded"]) - Date.parse(b["date_uploaded"])});
+        sorted = files.sort(function(a, b) {
+            if (a["date_uploaded"] === b["date_uploaded"])
+                return a.name.localeCompare(b.name)
+            return Date.parse(a["date_uploaded"]) - Date.parse(b["date_uploaded"])
+        });
     }
+    
     else
         sorted = files.sort(function (a, b) {
             if (a[sortBy] === b[sortBy])
@@ -57,6 +68,149 @@ function sortFiles(/*array*/files, /*string*/sortBy, /*const*/sortDirection) {
     }
 
     return sorted;
+}
+
+function getElementFromFileName(/*string*/filename) {
+    /*
+    Finds a row in the filemanager table based on the filename.
+    If it is not found, null is returned.
+    */
+    for (let row of fileManagerBody.children) {
+        if (row.getAttribute("filename") === filename)
+            return row;
+    }
+    return null;
+}
+
+function disableUserSelecting() {
+    for (let row of fileManagerBody.children) {
+        row.style.setProperty("user-select", "none");
+        row.style.setProperty("-webkit-user-select", "none");
+    }
+}
+
+function deselectAll() {
+    // Hiding file options
+    for (let row of fileManagerBody.children) {
+        row.style = "";
+    }
+    selected = [];
+
+    fileOptions.style = "";
+}
+
+function fileIsSelected(file) {
+    let filenames = [];
+    for (let item of selected)
+        filenames.push(item.name);
+    return filenames.includes(file.name);
+}
+
+function removeFile(file) {
+    for (let i in selected) {
+        item = selected[i];
+        if (item.name === file.name) {
+            selected.splice(i, 1);
+            return;
+        }
+    }
+}
+
+let selected = [];
+
+let previous, current, previousIndex, currentIndex;
+function showFileOptions(/*json*/file, /*PointerEvent*/event) {
+    /*
+    Shows file options if one file is selected. If more items are selected, show options for multifile selection. 
+    */
+    let row = getElementFromFileName(file.name);
+    
+    // Normal mouse click
+    if (!event.shiftKey && !event.ctrlKey) {
+        // If selected items is more than one, then perform 'ctrl' action.
+        if (selected.length === 1)
+            deselectAll();
+        else {
+            showFileOptions(file, {shiftKey: false, ctrlKey: true});
+            return;
+        }
+
+        if (fileIsSelected(file))
+            selected = [];
+        else {
+            selected.push(file);
+            row.style.backgroundColor = "#c9c9c9";
+        }
+
+        return;
+
+    // Click + ctrl - select individual files
+    } else if (!event.shiftKey && event.ctrlKey) {
+        if (fileIsSelected(file)) {
+            // Handle edge case where one file is selected then is selected again with 'ctrl' key.
+            if (selected.length === 1 && getElementFromFileName(file.name).style.backgroundColor !== 'rgb(125, 178, 227)') {
+                selected = [];
+                showFileOptions(file, {shiftKey: false, ctrlKey: true});
+                return;
+            }
+            // Deselect file if already selected
+            else {
+                removeFile(file);
+                getElementFromFileName(file.name).style = "";
+            }
+        }
+        else
+            selected.push(file);
+    
+    // Click + shift - selected all files between previously selected file and current file
+    } else if (event.shiftKey && !event.ctrlKey) {
+        previous = getElementFromFileName(selected[selected.length - 1].name);
+        current = row;
+
+        let rows = Array.from(fileManagerBody.children);
+        previousIndex = rows.indexOf(previous);
+        currentIndex = rows.indexOf(current);
+
+        // If both previous and selected elements are equal, then run the 'ctrl' routine
+        if (previousIndex === currentIndex) {
+            if (selected.length === 1)
+                selected = [];
+            showFileOptions(file, {shiftKey: false, ctrlKey: true});
+            return;
+        }
+
+        // If previous index is not before current index, swap the indices
+        if (currentIndex < previousIndex) {
+            let temp = previousIndex;
+            previousIndex = currentIndex;
+            currentIndex = temp;
+        }
+
+        for (let i = previousIndex + 1; i < currentIndex; i++) {
+            let _row = rows[i];
+            let data = JSON.parse(_row.getAttribute("data-content"));
+            if (!fileIsSelected(data)) {
+                selected.push(data);
+            }
+        }
+
+        selected.push(file);
+    }
+
+    for (let row of fileManagerBody.children) {
+        row.style = "";
+    }
+    for (let item of selected)
+        getElementFromFileName(item.name).style.backgroundColor = "#7db2e3";
+
+    if (selected.length > 0) {
+        disableUserSelecting();
+        
+        let ending = ""; if (selected.length > 1) {ending = "s";}
+        fileCount.firstElementChild.innerHTML = `File${ending} Selected: ${selected.length}`;
+        fileOptions.style.display = "flex";
+    } else
+        fileOptions.style.display = "none";
 }
 
 function displayFiles(/*array*/files) {
@@ -74,6 +228,9 @@ function displayFiles(/*array*/files) {
     for (let file of files) {
         newFile = fileManagerBody.insertRow();
         newFile.className = "file-item";
+        newFile.addEventListener("click", (event) => showFileOptions(file, event));
+        newFile.setAttribute("filename", file.name);
+        newFile.setAttribute("data-content", JSON.stringify(file));
 
         // Get the date type: taken or uploaded
         let dateLabel = sortDate.getElementsByTagName("h1")[0];
@@ -111,6 +268,7 @@ function displayFiles(/*array*/files) {
                     label = textElement.textContent = "N/A";
                 else {
                     textElement.textContent = formatDate(label);
+                    label = formatTime(label);
                 }
             }
             cell.title = label;
@@ -146,8 +304,15 @@ function formatSize(/*int*/size) {
 }
 
 function formatDate(/*string*/dateString) {
+    // Parses a datetime string and returns a string version of the date
     let formattedDate = new Date(Date.parse(dateString));
     return formattedDate.toDateString();
+}
+
+function formatTime(/*string*/dateString) {
+    // Parses a datetime string and returns a string version of the time
+    let formattedDate = new Date(Date.parse(dateString));
+    return formattedDate.toTimeString();
 }
 
 let sortName;
@@ -201,13 +366,61 @@ function update(type) {
         }
     }
 
-    displayFiles(sortFiles(files, type, direction));
+    displayFiles(sortFiles(allFiles, type, direction));
 }
 
+function sendRestoreRequest(/*array*/images) {
+    // Sends a restore image request to the backend, and deletes the images on the site.
+
+    for (let item of images)
+        getElementFromFileName(item).remove();
+
+    fetch("/restoreFiles", {
+            method: "POST",
+            body: JSON.stringify(images),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+        })
+        .catch(error => console.log(error))
+}
+
+function restoreFiles() {
+    let images = [];
+    for (let item of selected)
+        images.push(item.name);
+
+    let buttons = createNotification(`Are you sure you want to restore these images? ${images}`,
+        {
+            confirm: 'Yes',
+            cancel: 'No' 
+        }
+    );
+    buttons.confirm.id = "confirm-button";
+    buttons.confirm.addEventListener("click", () => {
+        sendRestoreRequest(images);
+        clearNotifications();
+        selected = [];
+    });
+    buttons.cancel.id = "cancel-button";
+    buttons.cancel.onclick = clearNotifications;
+}
+
+var navbar;
+var fileOptions;
 window.addEventListener("load", () => {
+    navbar = document.getElementsByClassName("navbar")[0];
+    
+    fileOptions = document.getElementById("file-options");
+    navbar.appendChild(fileOptions);
     
     fileManager = document.getElementById("file-manager");
     fileManagerBody = fileManager.getElementsByTagName("tbody")[0];
+    fileCount = document.getElementById("file-count");
 
     sortName = document.getElementById("sort-name");
     sortDate = document.getElementById("sort-date");

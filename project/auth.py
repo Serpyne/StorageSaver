@@ -5,7 +5,7 @@ Routes handling authentication of login and sign up of account, and logging out.
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
 from flask_login import login_user, logout_user, login_required, current_user
 
-from .models import User, Image
+from .models import User, File
 from .models import JPG_START, PNG_START, DATE_FORMAT
 from . import db
 from .modules.functions import bitshift_hash, log
@@ -196,14 +196,14 @@ def upload_image():
     overwrite = bool("overwrite" in data.keys())
     user = current_user.username
 
-    images = data["images"]
+    files = data["images"]
 
-    image_objects = []
+    file_objects = []
 
     existing_files = []
-    for image in images:
-        img = image["value"]
-        filename: str = image["name"]
+    for file in files:
+        img = file["value"]
+        filename: str = file["name"]
 
         extension = filename.split(".")[-1].upper()
         filename = filename[:-len(extension)] + extension
@@ -220,28 +220,28 @@ def upload_image():
 
         img_bytes = base64.b64decode(img)
 
-        image_object = Image.query.filter_by(name=filename, user=user).first()
+        image_object = File.query.filter_by(name=filename, user=user).first()
         if image_object:
             if not overwrite:
                 # Check if the filename already exists, only if the overwrite option is False
                 existing_files.append(image_object)
             else:
-                # Replace image data
+                # Replace file data
                 db.session.delete(image_object)
-                image_object = Image(name=filename, user=user, value=img_bytes)
+                image_object = File(name=filename, user=user, value=img_bytes)
                 image_object.set_property("date_uploaded", datetime.now().strftime(DATE_FORMAT))
                 
         else:
-            image_object = Image(name=filename, user=user, value=img_bytes)
+            image_object = File(name=filename, user=user, value=img_bytes)
             image_object.set_property("date_uploaded", datetime.now().strftime(DATE_FORMAT))
             
-        # Base64 Image is sometimes rotated 90 degrees clockwise.
+        # Base64 File is sometimes rotated 90 degrees clockwise.
         # Rotate it back if the orientation is that.
         if image_object.orientation == 8:
             print("rotated")
             image_object.value = image_object.rotate_left()
 
-        image_objects.append(image_object)
+        file_objects.append(image_object)
 
     if existing_files:
         files = [file.name for file in existing_files]
@@ -250,7 +250,7 @@ def upload_image():
 
     # Send response back with image information
     return_images = []
-    for image_obj in image_objects:
+    for image_obj in file_objects:
         return_images.append(
             {
                 "name": image_obj.name,
@@ -276,21 +276,34 @@ def get_image():
     filename = data["name"]
     username = current_user.username
 
-    img = Image.query.filter_by(name=filename, user=username).first()
+    img = File.query.filter_by(name=filename, user=username).first()
 
     max_height = min(1280, img.dims[1]//2)
     return jsonify({"base64": img.base64, "downsized": img.resize(max_height), "metadata": img.get_metadata()})
 
 
-@auth.route('/archiveImages', methods=['POST'])
+@auth.route('/archiveFiles', methods=['POST'])
 @login_required
-def archive_images():
+def archive_files():
     data = json.loads(request.data)
 
     user = current_user.username
     for filename in data["images"]:
-        img = Image.query.filter_by(name=filename, user=user).first()
-        img.set_property("archived", 1)
+        file = File.query.filter_by(name=filename, user=user).first()
+        file.set_property("archived", 1)
+    db.session.commit()
+
+    return jsonify({"response": 200})
+
+@auth.route('/restoreFiles', methods=['POST'])
+@login_required
+def restore_files():
+    files = json.loads(request.data)
+    user = current_user.username
+
+    for filename in files:
+        file = File.query.filter_by(name=filename, user=user).first()
+        file.remove_property("archived")
     db.session.commit()
 
     return jsonify({"response": 200})
