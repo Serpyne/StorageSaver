@@ -15,6 +15,14 @@ html {
     overflow: auto;
 }
 
+.navbar {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: fixed;
+}
+
 #menu-button {
     max-width: 100%;
     max-height: 100%;
@@ -116,6 +124,10 @@ html {
     align-items: center;
     margin: auto;
     padding: 1rem;
+}
+
+.notification h1 {
+    text-align: center;
 }
 
 #confirm-button {

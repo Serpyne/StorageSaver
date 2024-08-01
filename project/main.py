@@ -143,16 +143,32 @@ devlog:
     
     01/08 15:49 - getElementFromFileName is currently linear search, could
     implement binary search instead.
+
+    01/08 18:00 - Adding multiple file selecting in the recently deleted section.
+    Restoring files works now.
+    Looking to implement this into the gallery as well.
+    Also revamped the Image model to be named File. Hopefully will help with
+    the file manager later on.
+
+    01/08 22:30 - Added a preview and other buttons to recently deleted page.
+    Moved a bunch of files around to be more organised. Multiple image selection
+    added to gallery page. Confirmation prompts are now bolded and with line breaks
+    to be more readable.
+    Files can be permanently deleted in recently deleted.
+        - Looking to start work on file manager
+        - Calculate total file storage
+        - Overwriting does not rely on archived files
+            - Either overwrite file in recently deleted (what is being done now)
+            - Or allow both versions to work but put overwrite prompt if file with same name is being restored.
+        - Start all files
+        * Do about us if getting very tired.
 """
 
 from flask import Blueprint, render_template, url_for, request
-from flask_login import login_required, current_user
+from flask_login import login_required
 
-from . import db
 from .models import File
-
-from time import perf_counter
-from threading import Thread
+from .modules.imageloader import ImageLoader
 
 main = Blueprint('main', __name__)
 
@@ -169,32 +185,6 @@ def index():
 def profile():
     return render_template('profile.html')
 
-class ImageLoader:
-    def __init__(self):
-        self.images = {}
-
-    def load(self, **keys):
-        threads = []
-
-        user_images = File.query.filter(File.user == current_user.username)
-        for image in user_images:
-            for key in keys:
-                if image.get_property(key) != keys[key]:
-                    break
-            else:
-                threads.append(Thread(target=self.load_image, args=(image,)))
-
-        for thread in threads:
-            thread.start()
-
-        for thread in threads:
-            thread.join()
-
-        return self.images
-
-    def load_image(self, image: File):
-        self.images[f"{image.id}:{image.name}"] = image.resize(height=240)
-
 @main.route('/all_files', methods=["GET"])
 @login_required
 def all_files():
@@ -208,7 +198,7 @@ def gallery():
     # Viewing single files
     parameters = request.args
     if "id" in parameters:
-        img = Image.query.get(int(parameters["id"]))
+        img = File.query.get(int(parameters["id"]))
         return render_template('viewer.html', data=img)
 
     images = ImageLoader()
@@ -231,17 +221,8 @@ def albums():
 @main.route('/recently_deleted', methods=["GET"])
 @login_required
 def recently_deleted():
-    files = File.query.filter_by(user=current_user.username).all()
-    files = [file for file in files if file.get_property("archived")]
-    files = [{
-        "name": file.name,
-        "date_taken": file.date,
-        "date_uploaded": file.get_property("date_uploaded"),
-        "type": file.type,
-        "size": file.size,
-        "src": file.thumbnail
-    } for file in files]
-
+    images = ImageLoader()
+    files = images.load_thumbnails(archived=True)
     return render_template("recently_deleted.html", files=files)
 
 @main.route('/about_us', methods=["GET"])

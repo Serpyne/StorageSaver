@@ -15,6 +15,8 @@ const DESCENDING = 0x19;
 let fileManager;
 let fileManagerBody;
 let fileCount;
+let previewButton;
+let previewFrame;
 
 /*
 Format:
@@ -55,7 +57,7 @@ function sortFiles(/*array*/files, /*string*/sortBy, /*const*/sortDirection) {
             return Date.parse(a["date_uploaded"]) - Date.parse(b["date_uploaded"])
         });
     }
-    
+
     else
         sorted = files.sort(function (a, b) {
             if (a[sortBy] === b[sortBy])
@@ -99,6 +101,74 @@ function deselectAll() {
     fileOptions.style = "";
 }
 
+function previewFile() {
+    /*
+    Shows the file preview.
+    If the file is an image, then an <img> element is populated with the source data and shown.
+    However, if the file is not an image, then it says that this file format is not supported.
+    */
+    // Show previewFrame and remove all previous elements shown
+    for (let element of previewFrame.children) {
+        console.log(element.tagName);
+        if (element.className !== "close-button" && ["h1", "img"].includes(element.tagName.toLowerCase()))
+            element.remove();
+    }
+    previewFrame.style.display = "flex";
+    
+    let file, nameSplit, extension;
+
+    file = selected[0];
+    nameSplit = file.name.split(".");
+    extension = nameSplit[nameSplit.length - 1].toUpperCase();
+
+    if (["JPG", "JPEG", "PNG"].includes(extension)) {
+        let image = document.createElement("img");
+        image.src = file.src;
+        previewFrame.appendChild(image);
+
+        // Get original resolution image
+        fetch("/getImage", {
+                method: "POST",
+                body: JSON.stringify({
+                    name: file.name,
+                }),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                image.src = data.base64;
+            })
+            .catch(error => {
+                console.log(error);
+                previewFrame.appendChild(document.createTextNode("Error retrieving image from server."));
+            });
+
+    } else {
+        // Non-image format
+        let label = document.createElement("h1")
+        label.textContent = "Cannot be displayed as this file is not in the format .JPG, .JPEG, or .PNG.";
+        previewFrame.appendChild(label);
+    }
+}
+
+function closePreview() {
+    previewFrame.style.display = "none";
+}
+
+function selectAll() {
+    // Select all files
+    selected = [];
+    for (let row of fileManagerBody.getElementsByClassName("file-item"))
+        selected.push(JSON.parse(row.getAttribute("data-content")));
+
+    for (let item of selected)
+        getElementFromFileName(item.name).style.backgroundColor = "#7db2e3";
+
+    checkSelected()
+}
+
 function fileIsSelected(file) {
     let filenames = [];
     for (let item of selected)
@@ -116,22 +186,50 @@ function removeFile(file) {
     }
 }
 
+function checkSelected() {
+    for (let row of fileManagerBody.children) {
+        row.style = "";
+    }
+    for (let item of selected)
+        getElementFromFileName(item.name).style.backgroundColor = "#7db2e3";
+
+    // Hiding/showing option buttons on top right when necessary
+    if (selected.length > 0) {
+        disableUserSelecting();
+        
+        let ending = ""; if (selected.length > 1) {ending = "s";}
+        fileCount.firstElementChild.innerHTML = `<b>File${ending} Selected:</b> ${selected.length}`;
+        fileOptions.style.display = "flex";
+    } else
+        fileOptions.style.display = "none";
+        
+    // Hide preview when more items are selected
+    if (selected.length > 1) {
+        closePreview();
+    }
+}
+
 let selected = [];
 
 let previous, current, previousIndex, currentIndex;
-function showFileOptions(/*json*/file, /*PointerEvent*/event) {
+function handleSelection(/*json*/file, /*PointerEvent*/event) {
     /*
-    Shows file options if one file is selected. If more items are selected, show options for multifile selection. 
+    Shows file options if one file is selected.
+    If more items are selected, show options for multiple file selection. 
     */
     let row = getElementFromFileName(file.name);
     
+    previewButton.style.display = "none";
+
     // Normal mouse click
     if (!event.shiftKey && !event.ctrlKey) {
         // If selected items is more than one, then perform 'ctrl' action.
-        if (selected.length === 1)
+        if (selected.length <= 1){
             deselectAll();
-        else {
-            showFileOptions(file, {shiftKey: false, ctrlKey: true});
+            previewButton.style.display = "flex";
+
+        } else {
+            handleSelection(file, {shiftKey: false, ctrlKey: true});
             return;
         }
 
@@ -148,9 +246,9 @@ function showFileOptions(/*json*/file, /*PointerEvent*/event) {
     } else if (!event.shiftKey && event.ctrlKey) {
         if (fileIsSelected(file)) {
             // Handle edge case where one file is selected then is selected again with 'ctrl' key.
-            if (selected.length === 1 && getElementFromFileName(file.name).style.backgroundColor !== 'rgb(125, 178, 227)') {
+            if (selected.length <= 1 && getElementFromFileName(file.name).style.backgroundColor !== 'rgb(125, 178, 227)') {
                 selected = [];
-                showFileOptions(file, {shiftKey: false, ctrlKey: true});
+                handleSelection(file, {shiftKey: false, ctrlKey: true});
                 return;
             }
             // Deselect file if already selected
@@ -173,9 +271,9 @@ function showFileOptions(/*json*/file, /*PointerEvent*/event) {
 
         // If both previous and selected elements are equal, then run the 'ctrl' routine
         if (previousIndex === currentIndex) {
-            if (selected.length === 1)
+            if (selected.length <= 1)
                 selected = [];
-            showFileOptions(file, {shiftKey: false, ctrlKey: true});
+            handleSelection(file, {shiftKey: false, ctrlKey: true});
             return;
         }
 
@@ -195,22 +293,11 @@ function showFileOptions(/*json*/file, /*PointerEvent*/event) {
         }
 
         selected.push(file);
-    }
-
-    for (let row of fileManagerBody.children) {
-        row.style = "";
-    }
-    for (let item of selected)
-        getElementFromFileName(item.name).style.backgroundColor = "#7db2e3";
-
-    if (selected.length > 0) {
-        disableUserSelecting();
-        
-        let ending = ""; if (selected.length > 1) {ending = "s";}
-        fileCount.firstElementChild.innerHTML = `File${ending} Selected: ${selected.length}`;
-        fileOptions.style.display = "flex";
+    // Does not support ctrl + shift + click action
     } else
-        fileOptions.style.display = "none";
+        return;
+
+    checkSelected();
 }
 
 function displayFiles(/*array*/files) {
@@ -228,7 +315,7 @@ function displayFiles(/*array*/files) {
     for (let file of files) {
         newFile = fileManagerBody.insertRow();
         newFile.className = "file-item";
-        newFile.addEventListener("click", (event) => showFileOptions(file, event));
+        newFile.addEventListener("click", (event) => handleSelection(file, event));
         newFile.setAttribute("filename", file.name);
         newFile.setAttribute("data-content", JSON.stringify(file));
 
@@ -394,10 +481,10 @@ function restoreFiles() {
     for (let item of selected)
         images.push(item.name);
 
-    let buttons = createNotification(`Are you sure you want to restore these images? ${images}`,
+    let buttons = createNotification(`<b>Are you sure you want to restore these images?</b><br> ${images.join("<br>")}`,
         {
-            confirm: 'Yes',
-            cancel: 'No' 
+            confirm: 'Confirm',
+            cancel: 'Cancel' 
         }
     );
     buttons.confirm.id = "confirm-button";
@@ -405,6 +492,48 @@ function restoreFiles() {
         sendRestoreRequest(images);
         clearNotifications();
         selected = [];
+        fileOptions.style = "";
+    });
+    buttons.cancel.id = "cancel-button";
+    buttons.cancel.onclick = clearNotifications;
+}
+
+function sendDeleteRequest(/*array*/images) {
+    // Sends a delete image request to the backend, and deletes the images on the site.
+    for (let item of images)
+        getElementFromFileName(item).remove();
+
+    fetch("/deleteFiles", {
+            method: "POST",
+            body: JSON.stringify(images),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+        })
+        .catch(error => console.log(error))
+}
+
+function deleteFiles() {
+    let images = [];
+    for (let item of selected)
+        images.push(item.name);
+
+    let buttons = createNotification(`<i>Permanently deleted images cannot be restored.</i><br><b>Are you sure you want to delete these images?</b><br> ${images.join("<br>")}`,
+        {
+            confirm: 'Confirm',
+            cancel: 'Cancel' 
+        }
+    );
+    buttons.confirm.id = "confirm-button";
+    buttons.confirm.addEventListener("click", () => {
+        sendDeleteRequest(images);
+        clearNotifications();
+        selected = [];
+        fileOptions.style = "";
     });
     buttons.cancel.id = "cancel-button";
     buttons.cancel.onclick = clearNotifications;
@@ -412,12 +541,19 @@ function restoreFiles() {
 
 var navbar;
 var fileOptions;
+var body;
 window.addEventListener("load", () => {
+    body = document.getElementsByClassName("hero-body")[0]; 
     navbar = document.getElementsByClassName("navbar")[0];
     
     fileOptions = document.getElementById("file-options");
+    previewButton = document.getElementById("preview-button");
     navbar.appendChild(fileOptions);
-    
+    navbar.appendChild(previewButton);
+
+    previewFrame = document.getElementById("preview");
+    body.appendChild(previewFrame);
+
     fileManager = document.getElementById("file-manager");
     fileManagerBody = fileManager.getElementsByTagName("tbody")[0];
     fileCount = document.getElementById("file-count");

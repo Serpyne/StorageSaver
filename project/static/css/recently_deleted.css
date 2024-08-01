@@ -102,8 +102,59 @@ td {
     display: flex;   
 }
 #file-count h1 {
-    font-size: larger;
+    font-size: xx-large;;
     font-weight: 600;
     color: black;
-    padding: 2rem;
+    padding: 0.9rem;
+}
+
+#preview-button {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    padding: 1rem;
+    background: #18a791;
+    border-radius: .5rem;
+}
+#preview-button h1 {
+    font-size: x-large;
+    color: #dbdbdb;
+}
+#preview-button:hover {
+    background: #177668;
+}
+
+.preview {
+    margin: auto;
+    display: none;
+    font-size: large;
+    background: #000000b8;
+    flex-direction: column;
+    border-radius: 0.5rem;
+}
+.preview h1 {
+    height: 30rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+}
+.preview img {
+    height: 30rem;
+    padding: 1rem;
+    display: flex;
+    background: #ffffff;
+    border-radius: 0.5rem;
+}
+
+.close-button {
+    position: fixed;
+    width: 3rem;
+    max-height: 3rem;
+}
+.close-button:hover {
+    background: rgb(76, 76, 76);
 }

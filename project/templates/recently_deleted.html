@@ -7,6 +7,10 @@
 
 {% block content %}
 
+<div id="preview-button" class="file-option-button" onclick="previewFile()">
+  <h1 class="file-option-button-label">Preview</h1>
+</div>
+
 <div id="file-options" class="file-options">
   <div id="file-count" class="file-option">
     <h1>Files Selected:</h1>
@@ -26,7 +30,7 @@
     <img src="{{ url_for('static', filename='icons/blackCross.png')}}" alt="Close selection" />
   </div>
 
-  <div title="Delete" id="delete-button" class="file-option-button" onclick="deleteImages()">
+  <div title="Delete" id="delete-button" class="file-option-button" onclick="deleteFiles()">
     <img src="{{ url_for('static', filename='icons/deleteButton.png')}}" alt="Delete" />
   </div>
 </div>
@@ -42,6 +46,11 @@
     </tr>
   </table>
 </div>
+
+<div id="preview" class="preview">
+  <h1 class="close-button" onclick="closePreview()">Close</h1>
+</div>
+
 <script type="text/javascript">
   allFiles = {{ files | tojson }};
 </script>

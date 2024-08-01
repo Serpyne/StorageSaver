@@ -1,22 +1,27 @@
 
 // Declare HTML elements on load
 
-let body;
+var body;
 
-let viewer;
-let viewerImage;
-let viewerMenu;
-let viewerResult;
+var viewer;
+var viewerImage;
+var viewerMenu;
+var viewerResult;
 
-let sidemenu;
+var sidemenu;
 
-let infoButton;
-let infoPanel;
+var selectionButtons;
+var selectionFrame;
 
-let uploadContainer;
-let uploadItem;
+var infoButton;
+var infoPanel;
 
-let galleryBox;
+var uploadContainer;
+var uploadItem;
+
+var galleryBox;
+
+var labelNothing;
 
 function destroyLoadingScreen() {
     /*
@@ -28,9 +33,26 @@ function destroyLoadingScreen() {
     }
 }
 
+function setState(selectButton, state) {
+    if (state == "true") {
+        selectButton.setAttribute("state", "true");
+        selectButton.src = "static/icons/selected.png";
+        selectButton.style.opacity = 1;
+        selectButton.parentElement.style.opacity = 1;
+
+    } else if (state == "false") {
+        selectButton.setAttribute("state", "false");
+        selectButton.src = "static/icons/unselected.png";
+        selectButton.style = "";
+        selectButton.parentElement.style = "";
+    }
+}
+
+/*
+DEPRECATED SELECT FUNCTION
 function selectEvent(selectButton) {
-    /* On select button click, its state is toggled and then decides if other
-    buttons should appear in conjunction to one button being selected.*/
+    // On select button click, its state is toggled and then decides if other
+    // buttons should appear in conjunction to one button being selected.
     let state = selectButton.getAttribute("state");
     if (state == "false") {
         selectButton.setAttribute("state", "true");
@@ -42,37 +64,35 @@ function selectEvent(selectButton) {
 
     checkSelected();
 }
+*/
 
-let selected = [];
 function checkSelected() {
-    // If there are any selected items, then display the select button on all items.
-    let selectButtons = document.getElementsByClassName("select-button");
-    selected = [];
-    let button;
-    for (let i = 0; i < selectButtons.length; i++) {
-        button = selectButtons[i];
-        if (button.getAttribute("state") == "true")
-            selected.push(button);
-    }
+    // // If there are any selected items, then display the select button on all items.
+    // let selectButtons = document.getElementsByClassName("select-button");
+    // selected = [];
+    // let button;
+    // for (let i = 0; i < selectButtons.length; i++) {
+    //     button = selectButtons[i];
+    //     if (button.getAttribute("state") == "true")
+    //         selected.push(button);
+    // }
 
-    if (selected.length > 0) {
-        for (let i = 0; i < selectButtons.length; i++)
-            selectButtons[i].style.opacity = 1;
-    } else {
-        for (let i = 0; i < selectButtons.length; i++)
-            selectButtons[i].style = "";
-    }
+    // if (selected.length > 0) {
+    //     for (let i = 0; i < selectButtons.length; i++)
+    //         selectButtons[i].style.opacity = 1;
+    // } else {
+    //     for (let i = 0; i < selectButtons.length; i++)
+    //         selectButtons[i].style = "";
+    // }
 
     // Show bar with deselect all, select all
     let buttonsMenu = document.getElementById("buttons-menu");
     let uploadFrame = document.getElementById("upload");
-    let selectionFrame = document.getElementById("selection-buttons");
     if (selected.length > 0) {
         buttonsMenu.style.backgroundColor = "white";
         uploadFrame.style.display = "none";
         selectionFrame.style.display = "flex";
 
-        let selectionButtons = document.getElementById("selection-buttons").children;
         for (let i = 0; i < selectionButtons.length; i++)
             selectionButtons[i].style.display = "inline-flex";
                 
@@ -90,9 +110,9 @@ function deselectAll() {
     let button;
     for (let i = 0; i < selectButtons.length; i++) {
         button = selectButtons[i];
-        button.src = "/static/icons/unselected.png";
-        button.setAttribute("state", "false");
+        setState(button, "false");
     }
+    selected = [];
 
     checkSelected();
 }
@@ -100,13 +120,121 @@ function deselectAll() {
 function selectAll() {
     let selectButtons = document.getElementsByClassName("select-button");
     let button;
+    selected = [];
+    
     for (let i = 0; i < selectButtons.length; i++) {
         button = selectButtons[i];
-        button.src = "/static/icons/selected.png";
-        button.setAttribute("state", "true");
+        setState(button, "true");
+        data = {name: button.parentElement.getAttribute("data-content")};
+        selected.push(data);
     }
 
     checkSelected();
+}
+
+function fileIsSelected(file) {
+    let filenames = [];
+    for (let item of selected)
+        filenames.push(item.name);
+    return filenames.includes(file.name);
+}
+
+function removeFile(file) {
+    for (let i in selected) {
+        item = selected[i];
+        if (item.name === file.name) {
+            selected.splice(i, 1);
+            return;
+        }
+    }
+}
+
+function getElementFromFileName(/*string*/filename) {
+    /*
+    Finds a the image element in the gallery from a filename
+    If it is not found, null is returned.
+    */
+    for (let image of galleryBox.children) {
+        if (image.getAttribute("data-content") === filename)
+            return image;
+    }
+    return null;
+}
+
+let selected = [];
+
+let galleryItems;
+function handleSelection(/*json*/file, /*PointerEvent*/event) {
+    let image = getElementFromFileName(file.name);
+    galleryItems = galleryBox.getElementsByClassName("item-overlay");
+    
+    // Normal mouse click
+    if (!event.shiftKey && !event.ctrlKey) {
+        // If selected items is more than one, then perform 'ctrl' action.
+        handleSelection(file, {shiftKey: false, ctrlKey: true});
+        return;
+
+    // Click + ctrl - select individual files
+    } else if (!event.shiftKey && event.ctrlKey) {
+        if (fileIsSelected(file)) {
+            // Deselect file if already selected
+            removeFile(file);
+            setState(getElementFromFileName(file.name).lastElementChild, "true");
+        }
+        else
+            selected.push(file);
+    
+    // Click + shift - selected all files between previously selected file and current file
+    } else if (event.shiftKey && !event.ctrlKey) {
+        // If no items are selected at first.
+        if (selected.length === 0) {
+            handleSelection(file, {shiftKey: false, ctrlKey: true});
+            return;
+        }
+
+        previous = getElementFromFileName(selected[selected.length - 1].name);
+        current = image;
+
+        let gallerySquares = Array.from(galleryItems);
+        previousIndex = gallerySquares.indexOf(previous);
+        currentIndex = gallerySquares.indexOf(current);
+
+        // If both previous and selected elements are equal, then run the 'ctrl' routine
+        if (previousIndex === currentIndex) {
+            if (selected.length === 1)
+                selected = [];
+            handleSelection(file, {shiftKey: false, ctrlKey: true});
+            return;
+        }
+
+        // If previous index is not before current index, swap the indices
+        if (currentIndex < previousIndex) {
+            let temp = previousIndex;
+            previousIndex = currentIndex;
+            currentIndex = temp;
+        }
+
+        for (let i = previousIndex + 1; i < currentIndex; i++) {
+            let _row = gallerySquares[i];
+            let data = {name: _row.getAttribute("data-content")}
+            if (!fileIsSelected(data)) {
+                selected.push(data);
+            }
+        }
+
+        selected.push(file);
+    // Does not support ctrl + shift + click action
+    } else
+        return;
+
+    for (let file of galleryItems)
+        setState(file.lastElementChild, "false");
+
+    for (let item of selected)
+        setState(getElementFromFileName(item.name).lastElementChild, "true");
+
+    checkSelected();
+
 }
 
 let metadata;
@@ -116,25 +244,26 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
     Logic performed when a gallery item is clicked.
     - Close the subroutine if the element clicked
         is not the picture
-    - A shift click will select the item
+    - A ctrl click will select the item individually
+    - A shift click will select all of the items between the previously clicked item and the current one.
     - Clicking it normally will focus on the image.
     - If any amount of items are selected, then just
         clicking on the item will select it too.
     */
 
-   let selectButton = item.lastElementChild;
+    let selectButton = item.lastElementChild;
    
-   if (event.target === selectButton)
-    return;
-
-    // If item is shift-clicked, perform select logic.
-    if (event.shiftKey) {
-        selectEvent(selectButton);
+    if (event.target === selectButton)
         return;
+
+    image = {
+        name: item.getAttribute("data-content")
     }
 
-    if (selected.length > 0) {
-        selectEvent(selectButton)
+    // If item is shift-clicked, perform select logic.
+    if (event.shiftKey || event.ctrlKey || selected.length > 0) {
+        // selectEvent(selectButton);
+        handleSelection(image, event);
         return;
     }
 
@@ -395,7 +524,7 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
     selectButton.src = "static/icons/unselected.png";
     selectButton.setAttribute("state", "false");
 
-    selectButton.addEventListener("click", (event) => selectEvent(selectButton));
+    selectButton.addEventListener("click", (event) => handleSelection({name: alt}, event));
     
     // Append gallery item to HTML
     let galleryItem = document.createElement("img");
@@ -408,6 +537,10 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
     itemOverlay.appendChild(selectButton);
 
     galleryBox.appendChild(itemOverlay);
+
+    // If "There's nothing here.. Add something?" label is still there (must be zero images), then it is deleted.
+    labelNothing = document.getElementById("label-nothing");
+    labelNothing.style.display = "none";
 
     return galleryItem;
 }
@@ -437,8 +570,6 @@ function createUploadItem(/*string*/fileName) {
     let uploadQueue = document.getElementById("upload-queue");
     uploadQueue.appendChild(uploadItem);
 
-    setTimeout("removeUploadItem(uploadItem);", 1000 * 15); // After 15 seconds, delete upload item
-
     return uploadItem;
 }
 
@@ -456,7 +587,6 @@ function sendUploadRequest(/*array*/images, /*bool*/overwrite) {
     else
         createUploadItem(uploadsFormatted);
 
-
     fetch("/uploadImage", {
         method: "POST",
         body: JSON.stringify(data),
@@ -472,7 +602,7 @@ function sendUploadRequest(/*array*/images, /*bool*/overwrite) {
             if (data.response == 201) {
                 // Display overwrite notifcation
                 let ending = ''; if (data.files.length > 1) {ending = "s"}
-                let buttons = createNotification(`File${ending} with same name as existing file: ${data.files.join(", ")}`, {
+                let buttons = createNotification(`<b>File${ending} with same name as existing file:</b><br> ${data.files.join("<br>")}`, {
                     "overwrite": "Overwrite",
                     "cancel": "Cancel",
                 });
@@ -487,6 +617,7 @@ function sendUploadRequest(/*array*/images, /*bool*/overwrite) {
             }
 
             uploadItem.innerHTML = `Uploaded ${uploadsFormatted}.`;
+            setTimeout("", 1000 * 15); // After 15 seconds, delete upload item
 
             for (let item of galleryBox.getElementsByClassName("item-overlay")) {
                 let name = item.getAttribute("data-content");
@@ -537,30 +668,25 @@ function uploadEvent() {
             };
             reader.readAsDataURL(file);
         }
-
-        // If "There's nothing here.. Add something?" label is still there (must be zero images), then it is deleted.
-        let labelNothing = document.getElementById("label-nothing");
-        if (labelNothing)
-            labelNothing.remove();
-
     }
 }
 
 function deleteImages() {
-    buttons = createNotification("Are you sure?", {
+    let removedItems = [];
+    for (let item of selected) {
+        removedItems.push(item.name);
+    }
+
+    buttons = createNotification(`<b>Are you sure you want to delete these images?</b><br> ${removedItems.join("<br>")}`, {
         "confirm": "Yes",
         "cancel": "No"
     });
     buttons.confirm.id = "confirm-button";
     buttons.confirm.addEventListener("click", () => {
-        let removedItems = [];
-        let item;
-        for (let _select of selected) {
-            item = _select.parentElement;
-            removedItems.push(item.getAttribute("data-content"));
-            item.remove();
+        for (let item of removedItems) {
+            console.log(item)
+            getElementFromFileName(item).remove();
         }
-
         // Add images to recently deleted
         fetch("/archiveFiles", {
             method: "POST",
@@ -574,6 +700,9 @@ function deleteImages() {
             .then(response => response.json())
             .then(data => {})
 
+        selectionFrame.style.display = "none";
+        if (galleryBox.getElementsByClassName("gallery-item").length === 0)
+            labelNothing.style.display = "";
         clearNotifications();
     });
     buttons.cancel.id = "cancel-button";
@@ -598,6 +727,11 @@ window.addEventListener("load", (event) => {
     // Context menu
     document.onclick = hideContextMenu;
 
+    selectionFrame = document.getElementById("selection-buttons");
+    selectionButtons = document.getElementsByClassName("selection-button");
+    for (let i = 0; i < selectionButtons.length; i++)
+        selectionButtons[i].style.display = "none";
+            
     // Reset viewer on mouse down
     document.addEventListener("mousedown", () => {viewerActive = false;});
     
@@ -624,6 +758,8 @@ window.addEventListener("load", (event) => {
             closeViewer(event, force=true);
     });
 
+    labelNothing = document.getElementById("label-nothing");
+
     // Viewer declaration
     viewer = document.getElementById("viewer");
     viewerImage = document.getElementById("viewer-img");
@@ -638,10 +774,6 @@ window.addEventListener("load", (event) => {
 
     imageZoom();
 
-    let selectionButtons = document.getElementsByClassName("selection-button");
-    for (let i = 0; i < selectionButtons.length; i++)
-        selectionButtons[i].style.display = "none";
-            
     // Add upload queue to body element
     let uploadQueue = document.getElementById("upload-queue");
     body.appendChild(uploadQueue);

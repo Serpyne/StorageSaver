@@ -296,6 +296,11 @@ img.gallery-item, .item-overlay {
 #gallery-container {
   position: absolute;
   right: 0;
+  max-width: 50%;
+}
+
+#menu-container {
+  max-width: 50%;
 }
 
 .zoom-notif {
@@ -350,4 +355,8 @@ img.gallery-item, .item-overlay {
 .loading-image {
   height: 2rem;
   padding-inline-end: 1rem;
+}
+
+.container {
+  min-width: 100%;
 }

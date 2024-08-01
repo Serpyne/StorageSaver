@@ -51,10 +51,15 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    # Load flask blueprints
     from .auth import auth as auth_blueprint
-    app.register_blueprint(auth_blueprint)
-
     from .main import main as main_blueprint
+    from .files import files as files_blueprint
+    from .images import images as images_blueprint
+
+    app.register_blueprint(auth_blueprint)
     app.register_blueprint(main_blueprint)
+    app.register_blueprint(files_blueprint)
+    app.register_blueprint(images_blueprint)
 
     return app
