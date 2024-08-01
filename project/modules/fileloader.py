@@ -6,6 +6,11 @@ from ..models import File
 from time import perf_counter
 from threading import Thread
 
+IMAGES = "images"
+FILES = "files"
+
+IMAGE_EXTENSIONS = [".JPEG", ".JPG", ".PNG"]
+
 def timer(func):
     """
     Time how long a method takes. Output is in the terminal.
@@ -17,7 +22,7 @@ def timer(func):
         return data
     return wrapper
 
-class ImageLoader:
+class FileLoader:
     @timer
     def load(self, **keys):
         threads = []
@@ -41,26 +46,35 @@ class ImageLoader:
         for thread in threads:
             thread.join()
 
-        print(self.images)
         return self.images
 
     @timer
-    def load_thumbnails(self, archived=False):
+    def load_thumbnails(self, _type=None, archived: bool = False):
         threads = []
 
         files = File.query.filter_by(user=current_user.username).all()
+
         if archived:
             files = [file for file in files if file.get_property("archived")]
 
+        if _type == IMAGES:
+            files = [file for file in files if file.extension in IMAGE_EXTENSIONS]
+        elif _type == FILES:
+            print([file.extension for file in files])
+            files = [file for file in files if file.extension not in IMAGE_EXTENSIONS]
+        # If type is None -> all files
+
         def _load_thumbnail(file):
-            self.images.append({
+            file_json = {
                 "name": file.name,
-                "date_taken": file.date,
                 "date_uploaded": file.get_property("date_uploaded"),
                 "type": file.type,
                 "size": file.size,
                 "src": file.thumbnail
-            })
+            }
+            if _type == IMAGES:
+                file_json["date_taken"] = file.date
+            self.images.append(file_json)
         
         self.images = []
         for file in files:

@@ -162,13 +162,26 @@ devlog:
             - Or allow both versions to work but put overwrite prompt if file with same name is being restored.
         - Start all files
         * Do about us if getting very tired.
+
+    02/08 1:43 - Broke through on the file manager. File uploads are now done with
+    multiple requests (one per file) so that we can collect errors if there are
+    duplicate files or if any of the files are not in the correct format (They
+    must not be image files). Therefore the system is very modular and hopefully
+    can implement back into the gallery system.
+    Overwrite works a lot better too. It stops image files first, then overwrite
+    has another option named 'skip' which you can use to not overwrite the duplicate
+    files, but still upload the rest of the files.
+    - Next to work on display the uploaded items
+    - Plus an upload notification per file on the bottom left
+    - Must add right clicking to file manager and recently deleted which parallel the file options.
 """
 
 from flask import Blueprint, render_template, url_for, request
 from flask_login import login_required
 
 from .models import File
-from .modules.imageloader import ImageLoader
+from .modules.fileloader import FileLoader
+from .modules.fileloader import FILES, IMAGES
 
 main = Blueprint('main', __name__)
 
@@ -201,9 +214,8 @@ def gallery():
         img = File.query.get(int(parameters["id"]))
         return render_template('viewer.html', data=img)
 
-    images = ImageLoader()
+    images = FileLoader()
     image_json = images.load(archived=None)
-
     # print([f"{key}: {value[:16]}..." for key, value in image_json.items()])
 
     return render_template('gallery.html', images=image_json)
@@ -211,7 +223,10 @@ def gallery():
 @main.route('/file_manager', methods=["GET"])
 @login_required
 def file_manager():
-    ...
+    images = FileLoader()
+    files = images.load_thumbnails(_type=FILES)
+    return render_template("file_manager.html", files=files)
+
 
 @main.route('/albums', methods=["GET"])
 @login_required
@@ -221,7 +236,7 @@ def albums():
 @main.route('/recently_deleted', methods=["GET"])
 @login_required
 def recently_deleted():
-    images = ImageLoader()
+    images = FileLoader()
     files = images.load_thumbnails(archived=True)
     return render_template("recently_deleted.html", files=files)
 

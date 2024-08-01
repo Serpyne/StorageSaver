@@ -554,6 +554,142 @@ function deleteFiles() {
     buttons.cancel.onclick = clearNotifications;
 }
 
+let filenames;
+function handleDuplicates(/*array*/duplicateFiles, /*array*/allFiles) {
+    // Handling duplicate files
+    filenames = [];
+    for (let file of duplicateFiles)
+        filenames.push(file.name);
+
+    let buttons = createNotification(`<b>Files are conflicting with existing files, do you want to overwrite them?: </b><br> ${filenames.join("<br>")}`, options={
+        confirm: "Yes",
+        skip: "Skip these files",
+        cancel: "No"
+    });
+    buttons.confirm.id = "confirm-button";
+    buttons.confirm.addEventListener("click", () => {
+        sendUploadRequest(allFiles, overwrite=true);
+        clearNotifications();
+    });
+    buttons.skip.id = "confirm-button";
+    buttons.skip.addEventListener("click", () => {
+        for (let file in duplicateFiles) {
+            let index = allFiles.indexOf(file);
+            allFiles.splice(index, 1);
+        }
+        sendUploadRequest(allFiles);
+        clearNotifications();
+    });
+    buttons.cancel.id = "cancel-button";
+    buttons.cancel.onclick = clearNotifications;
+    
+}
+
+function handleUploadResponses(duplicateFiles, imageFiles, files) {
+    // Callback function handling responses involving duplicate files and if the files contain images.
+    // Can only be called after all of the fetches have been called.
+    if (imageFiles.length > 0) {
+        let imageFilenames = [];
+        for (file of imageFiles);
+            imageFilenames.push(file.name);
+
+        filenames = [];
+        let filesData = [];
+        for (file in files) {
+            if (!imageFilenames.includes(file.name)) {
+                filenames.push(file.name);
+                filesData.push(file)
+            }
+        }
+        
+        let text = `<i>Image files can only be uploaded in 'All Files' or the 'Gallery'</i><br><b>Only these files will be uploaded: </b><br> ${filenames.join("<br>")}`;
+        let buttons = createNotification(text, options={confirm: "Okay"});
+
+        buttons.confirm.id = "confirm-button";
+        buttons.confirm.addEventListener("click", () => {
+            sendUploadRequest(filesData);
+            clearNotifications();
+            if (duplicateFiles.length > 0)
+                handleDuplicates(duplicateFiles, files);
+        });
+
+    } else {
+        if (duplicateFiles.length > 0)
+            handleDuplicates(duplicateFiles, files);
+    }
+}
+
+let duplicateFiles;
+let imageFiles;
+let file;
+function sendUploadRequest(/*array*/files, /*bool*/overwrite = false) {
+    /*
+    Send an upload request to backend file by file.
+    Therefore the path '/uploadFile' will receive a request for each file in the list.
+    */
+    duplicateFiles = [];
+    imageFiles = [];
+
+    let uploadCount = 0;
+    for (let file of files) {
+        // Overwrite option
+        if (overwrite)
+            file.overwrite = 1;
+
+        fetch("/uploadFile", {
+            method: "POST",
+            body: JSON.stringify(file),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.response === 201)
+                duplicateFiles.push(file);
+            else if (data.response === 300)
+                imageFiles.push(file);
+            // MORE
+
+            uploadCount++;
+
+            if (uploadCount === files.length)
+                handleUploadResponses(duplicateFiles=duplicateFiles, imageFiles=imageFiles, files=files);
+        })
+        .catch(error => console.log(error));
+    }
+}
+
+function uploadEvent() {
+    let files = uploadButton.files;
+    
+    let filesData = [];
+    let value;
+    let uploadCount = 0;
+    for (let file of files) {
+        reader = new FileReader();
+        reader.onload = function (/*ProgressEvent*/event) {
+            value = event.target.result;
+            filesData.push({
+                name: file.name,
+                value: value
+            });
+
+            uploadCount++;
+
+            if (uploadCount === uploadButton.files.length) {
+                sendUploadRequest(filesData);
+
+                // Reset upload buttons files
+                uploadButton.value = '';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+var uploadButton;
+
 var navbar;
 var fileOptions;
 var body;
@@ -588,5 +724,8 @@ window.addEventListener("load", () => {
 
     sortArrows = document.getElementsByClassName("sort-arrow");
     
+    uploadButton = document.getElementById("upload-button");
+    uploadButton.addEventListener("change", () => uploadEvent());
+
     update(NAME);
 });

@@ -1,0 +1,21 @@
+.upload-frame {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    margin: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+}
+
+#upload-button {
+    display: none;
+}
+
+#upload-image {
+    height: 5rem;
+    padding: 0.5rem;
+}
+.upload-frame:hover {
+    background: rgba(0, 0, 0, 0.2);
+}

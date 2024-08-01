@@ -6,6 +6,7 @@ Current models being:
     ByteChunk(id, value<bytes>)
 """
 
+from flask import url_for
 from flask_login import UserMixin
 from . import db
 from io import BytesIO
@@ -15,21 +16,16 @@ from datetime import datetime
 import json
 import PIL
 import PIL.Image
+from os.path import join, dirname
 from PIL import TiffImagePlugin
 from PIL.Image import Exif
 from PIL.ExifTags import TAGS
 
-TYPES = {
-    "JPG": "JPG File",
-    "JPEG": "JPEG File",
-    "PNG": "PNG File",
-    "GIF": "GIF File",
-    "TXT": "Text Document",
-    "DOC": "Word Document",
-    "DOCX": "Word Document",
-    "PDF": "Portable Document Format",
-    "other": "File"
-}
+with open(join(dirname(__file__), "modules/types.json"), "r") as f:
+    TYPES = json.load(f)
+    f.close()
+
+FILE_SRC = "static/icons/file64.png"
 
 JPG_START = "data:image/jpeg;base64,"
 PNG_START = "data:image/png;base64,"
@@ -91,7 +87,7 @@ class File(db.Model):
     @property
     def extension(self) -> str | bool:
         """
-        Returns .PNG or .JPEG for extensions. Returns False if neither match.
+        Returns .PNG or .JPEG for extensions. Returns the filename extension otherwise, Returns None if nothing matches.
         """
 
         if self.value[:4] == PNG_SEQUENCE[0] and self.value[-4:] == PNG_SEQUENCE[1]:
@@ -99,25 +95,17 @@ class File(db.Model):
         elif self.value[:2] == JPG_SEQUENCE:
             return ".JPEG"
         
-        return False
-        
-    @property
-    def bytesio(self) -> BytesIO:
-        if not self.extension:
-            self.value = JPG_SEQUENCE + self.value
-        return BytesIO(self.value)
+        extension = self.name.split(".")[-1]
+        extension = "".join(extension.split())
+        extension = extension.upper()
+        if extension in TYPES:
+            return "." + extension
 
-    @property
-    def image(self) -> PIL.Image.Image:
-        return PIL.Image.open(self.bytesio)
+        return None
 
     @property
     def size(self) -> int:
         return len(self.value)
-    
-    @property
-    def dims(self) -> tuple[int]:
-        return self.image.size
     
     @property
     def date(self) -> tuple[int]:
@@ -130,12 +118,55 @@ class File(db.Model):
     
     @property
     def type(self) -> str:
-        ext = self.extension[1:]
-        if ext in TYPES:
-            return TYPES[ext]
+        ext = self.extension
+        if ext == None:
+            return TYPES["other"]
+        elif ext[1:] in TYPES:
+            return TYPES[ext[1:]]
         else:
             return TYPES["other"]
 
+    @property
+    def thumbnail(self):
+        # Returns a 32x32 cropped version of the image.
+        # If it is not an image file, then it returns a file icon.
+        if self.extension not in ".PNG .JPEG .JPG".split():
+            return FILE_SRC
+        
+        dims = self.dims
+        height = int(dims[1] * 32 // dims[0])
+        im_downsized = self.image.resize((32, height), PIL.Image.Resampling.BICUBIC)
+        top = height // 2 - 16
+        bottom = top + 32
+        im_cropped = im_downsized.crop((0, top, 32, bottom))
+
+        extension = self.extension
+
+        buffered = BytesIO()
+        im_cropped.save(buffered, format=extension[1:]) # Stripping the period off of the file extension
+        img_str = b64encode(buffered.getvalue())
+
+        if extension == ".PNG":
+            return PNG_START + img_str.decode("utf-8")
+        elif extension == ".JPEG":
+            return JPG_START + img_str.decode("utf-8")
+        
+    # Image methods
+
+    @property
+    def bytesio(self) -> BytesIO:
+        if not self.extension:
+            self.value = JPG_SEQUENCE + self.value
+        return BytesIO(self.value)
+    
+    @property
+    def image(self) -> PIL.Image.Image:
+        return PIL.Image.open(self.bytesio)
+
+    @property
+    def dims(self) -> tuple[int]:
+        return self.image.size
+    
     @property
     def base64(self) -> str | bool:
         if self.extension == ".PNG":
@@ -165,28 +196,9 @@ class File(db.Model):
             return PNG_START + img_str.decode("utf-8")
         elif extension == ".JPEG":
             return JPG_START + img_str.decode("utf-8")
-    
-    @property
-    def thumbnail(self):
-        # Returns a 32x32 cropped version of the image.
-        dims = self.dims
-        height = int(dims[1] * 32 // dims[0])
-        im_downsized = self.image.resize((32, height), PIL.Image.Resampling.BICUBIC)
-        top = height // 2 - 16
-        bottom = top + 32
-        im_cropped = im_downsized.crop((0, top, 32, bottom))
-
-        extension = self.extension
-
-        buffered = BytesIO()
-        im_cropped.save(buffered, format=extension[1:]) # Stripping the period off of the file extension
-        img_str = b64encode(buffered.getvalue())
-
-        if extension == ".PNG":
-            return PNG_START + img_str.decode("utf-8")
-        elif extension == ".JPEG":
-            return JPG_START + img_str.decode("utf-8")
         
+        return FILE_SRC
+    
     def rotate_left(self) -> bytes:
         original = self.image
         original = original.rotate(90, expand=True)
@@ -197,7 +209,6 @@ class File(db.Model):
         original.save(buffered, format=extension[1:]) # Stripping the period off of the file extension
         return buffered.getvalue()
 
-    
     def deprecated_rotate_left(self) -> bytes:
         """
         Deprecated as the nested for loops was too slow.
