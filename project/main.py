@@ -182,6 +182,10 @@ devlog:
     Added code blocks to file previews where the file supports it.
     Uploading works well except changed the 'skip' option to just skip over duplicate files and the first
     upload request will upload all of the files that it can.
+    Fixed conflict between bulma.js and prism.js where they conflicted with named classes.
+    This was done by taking in a parameter 'ignore_highlighting' when rendering the HTML template,
+    and if this boolean value is true, then some of the classes and inheritance is individuallised
+    such that the two packages can work in tandem.
         - Displays files now.
         -> should work on upload notification for file manager.
         -> After that do file storage calculation.
