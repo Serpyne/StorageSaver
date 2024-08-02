@@ -10,13 +10,31 @@ function fillRandomPassword(/*string*/pass) {
     passwordText.innerHTML = randomString;
 }
 
-function showPasswordPrompt(/*bool*/hide_notifation = false) {
-    let passwordPrompt = document.getElementById("change-password");
+var emailPrompt;
+function showEmailPrompt(/*bool*/hide_notification = false) {
+    emailPrompt = document.getElementById("change-email");
+    passwordPrompt = document.getElementById("change-password");
+    if (emailPrompt.style.display == "block") return
+
+    emailPrompt.style.display = "block";
+    passwordPrompt.style.display = "none";
+
+    if (hide_notification) {
+        let emailNotification = document.getElementById("password-email");
+        emailNotification.style.display = "none";
+    }
+}
+
+var passwordPrompt;
+function showPasswordPrompt(/*bool*/hide_notification = false) {
+    emailPrompt = document.getElementById("change-email");
+    passwordPrompt = document.getElementById("change-password");
     if (passwordPrompt.style.display == "block") return
 
     passwordPrompt.style.display = "block";
+    emailPrompt.style.display = "none";
 
-    if (hide_notifation) {
+    if (hide_notification) {
         let passwordNotification = document.getElementById("password-notification");
         passwordNotification.style.display = "none";
     }
@@ -44,7 +62,6 @@ function toggleSetting(/*string*/setting, /*HTMLElement*/switchElement) {
     })
     .then(response => response.json())
     .then(data => {
-        console.log(data);
     })
     .catch(error => console.log(error))
 }
@@ -52,8 +69,8 @@ function toggleSetting(/*string*/setting, /*HTMLElement*/switchElement) {
 var SETTINGS;
 var settingsContainer;
 function loadSettings(/*json*/settings, /*json*/userSettings) {
+    settingsContainer = document.getElementById("settings-container");
     SETTINGS = settings;
-    settingsContainer = document.getElementById("settings-container")
 
     for (let setting of Object.keys(settings)) {
         options = settings[setting];
@@ -85,3 +102,84 @@ function loadSettings(/*json*/settings, /*json*/userSettings) {
         settingsContainer.appendChild(settingFrame);
     }
 }
+
+function checkNotifications(message) {
+    let notif = document.getElementById("prompt-notification");
+    let container;
+    if (message.includes("email"))
+        container = document.getElementsByClassName("email")[0];
+    else
+        container = document.getElementsByClassName("password")[0];
+
+    container.getElementsByClassName("box")[0].appendChild(notif);
+}
+
+let dynamicStyles = null;
+function addAnimation(body) {
+    if (!dynamicStyles) {
+        dynamicStyles = document.createElement('style');
+        dynamicStyles.type = 'text/css';
+        document.head.appendChild(dynamicStyles);
+    }
+
+    dynamicStyles.sheet.insertRule(body, dynamicStyles.length);
+}
+
+function lerp(a, b, step=1) {
+    return a + (b - a) * step
+}
+
+let oldStorage = 0;
+let newStorage = 0;
+function update() {
+    oldStorage = currentStorage;
+    currentStorage = lerp(oldStorage, newStorage, 0.1);
+
+    progressLabel.innerHTML = formatSize(currentStorage);
+
+    if (currentStorage - oldStorage < 1) {
+        return;
+    }
+
+    setTimeout("update();", 30);
+}
+
+var currentStorage = 0;
+var maxStorage = Math.pow(10, 10);
+
+var progressLabel;
+var progressMax;
+window.addEventListener("load", () => {
+    progressLabel = document.getElementById("progress-label");
+    progressMax = document.getElementById("progress-max");
+    
+    progressLabel.innerHTML = `0 MB`;
+    progressMax.innerHTML = `<b>/${formatSize(maxStorage)}</b>`;
+
+    fetch("/getFileStorage", {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json; charset=UTF-8"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        newStorage = data.size;
+        let percent = newStorage * 100 / maxStorage;
+
+        addAnimation(`
+            @keyframes progress-animation {
+                from {
+                    --progress: 0;
+                }
+                to {
+                    --progress: ${percent};
+                }
+            }
+        `);
+        
+        setTimeout("update();", 30);
+    })
+    .catch(error => console.log(error))
+
+});

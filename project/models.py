@@ -30,16 +30,16 @@ FILE_SRC = "static/icons/file64.png"
 
 JPG_START = "data:image/jpeg;base64,"
 PNG_START = "data:image/png;base64,"
+GIF_START = "data:image/gif;base64,"
 
 PNG_SEQUENCE = b"\x89PNG", b"\xaeB`\x82"
 JPG_SEQUENCE = b"\xff\xd8"
 
 DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 
-SETTINGS = {
-    "imageQuality": ["Image quality becomes blurry at low resolutions.", "Image quality becomes pixelated at low resolutions."],
-    "test": ["What ", "the sigma"]
-}
+with open(join(dirname(__file__), "modules/settings.json"), "r") as f:
+    SETTINGS = json.load(f)
+    f.close()
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -151,7 +151,6 @@ class File(db.Model):
     @property
     def date(self) -> tuple[int]:
         md = self.get_metadata()
-        print(md)
         if "DateTime" in md:
             date_obj = datetime.strptime(md["DateTime"], "%Y:%m:%d %H:%M:%S")
             return date_obj.strftime(DATE_FORMAT)
@@ -174,15 +173,33 @@ class File(db.Model):
         # If it is not an image file, then it returns a file icon.
         if not self.is_image:
             return FILE_SRC
-        
-        dims = self.dims
-        height = int(dims[1] * 32 // dims[0])
-        im_downsized = self.image.resize((32, height), PIL.Image.Resampling.BICUBIC)
-        top = height // 2 - 16
-        bottom = top + 32
-        im_cropped = im_downsized.crop((0, top, 32, bottom))
 
         extension = self.extension
+        im = self.image
+        
+        # GIF returns the first frame but downsized
+        if extension == ".GIF":
+            im.seek(1)
+            extension = ".PNG"
+
+        dims = self.dims
+
+        # Portrait
+        if dims[1] > dims[0]:
+            height = int(dims[1] * 32 // dims[0])
+            # Images are downsized and cropped to 32x32
+            im_downsized = im.resize((32, height), PIL.Image.Resampling.BICUBIC)
+            top = height // 2 - 16
+            bottom = top + 32
+            im_cropped = im_downsized.crop((0, top, 32, bottom))
+
+        # Landscape
+        else:
+            width = int(dims[0] * 32 // dims[1])
+            im_downsized = im.resize((width, 32), PIL.Image.Resampling.BICUBIC)
+            left = width // 2 - 16
+            right = left + 32
+            im_cropped = im_downsized.crop((left, 0, right, 32))
 
         buffered = BytesIO()
         im_cropped.save(buffered, format=extension[1:]) # Stripping the period off of the file extension
@@ -195,7 +212,7 @@ class File(db.Model):
         
     @property
     def is_image(self):
-        return self.extension in [".PNG", ".JPEG", ".JPG"]
+        return self.extension in [".PNG", ".JPEG", ".JPG", ".GIF"]
 
     @property
     def is_code(self):
@@ -233,10 +250,33 @@ class File(db.Model):
     def base64(self) -> str | bool:
         if self.extension == ".PNG":
             return PNG_START + b64encode(self.value).decode("utf-8")
-        elif self.extension == ".JPEG":
+        elif self.extension in [".JPEG", ".JPG"]:
             return JPG_START + b64encode(self.value).decode("utf-8")
+        elif self.extension == ".GIF":
+            return GIF_START + b64encode(self.value).decode("utf-8")
         
         return False
+
+    @property
+    def first_frame(self) -> str:
+        if self.extension != ".GIF":
+            return None
+        
+        im = self.image
+        im.seek(1)
+
+        buffered = BytesIO()
+        im.save(buffered, format="PNG") # Stripping the period off of the file extension
+        img_str = b64encode(buffered.getvalue())
+
+        return PNG_START + img_str.decode("utf-8")
+
+    @property
+    def frame_count(self) -> int:
+        if self.extension != ".GIF":
+            return None
+        
+        return self.image.n_frames
 
     def resize(self, height: int, sampling = PIL.Image.Resampling.BICUBIC) -> str:
         """

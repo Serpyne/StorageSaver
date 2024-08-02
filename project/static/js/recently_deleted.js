@@ -64,7 +64,6 @@ function handleSelection(/*json*/file, /*PointerEvent*/event) {
         let sameFile = false;
         if (selected.length <= 1) {
             if (selected.length === 1) {
-                console.log(selected[0].name, file.name)
                 if (selected[0].name == file.name)
                     sameFile = true;
             }
@@ -82,6 +81,13 @@ function handleSelection(/*json*/file, /*PointerEvent*/event) {
             if (!sameFile) {
                 selected.push(file);
                 row.style.backgroundColor = "#c9c9c9";
+
+                // To save time, a setting allows the user to preview files on one click.
+                if (oneClickPreview) {
+                    previewButton.style = "";
+                    previewFile();
+                }
+
             // Edge case where one file is selected (first-case) and the same file is clicked. File should be unselected.
             } else {
                 previewButton.style = "";

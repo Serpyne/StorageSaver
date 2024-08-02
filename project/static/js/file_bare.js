@@ -1,5 +1,9 @@
 let allFiles;
 
+// User settings
+
+var oneClickPreview = false;
+
 // Declare sorting constants
 const NAME = "name";
 const DATE_TAKEN = "date_taken";
@@ -113,6 +117,7 @@ function previewFile() {
 
     closePreviewButton.style.display = "flex";
     previewContainer.style.display = "flex";
+    previewFrame.innerHTML = "";
     
     if (["JPG", "JPEG", "PNG"].includes(extension)) {
         let image = document.createElement("img");
@@ -133,7 +138,6 @@ function previewFile() {
             .then(data => {
                 // Show previewFrame and remove all previous elements shown
                 previewFrame.style.display = "flex";
-                previewFrame.innerHTML = "";
 
                 image.src = data.base64;
             })
@@ -193,6 +197,10 @@ function previewFile() {
                 pre.appendChild(codeblock);
                 previewFrame.appendChild(codeScript);
                 previewFrame.appendChild(pre);
+            } else if (file.type === "gif" || file.type === "image") {
+                let img = document.createElement("img");
+                img.src = file.value;
+                previewFrame.appendChild(img);
             }
 
         })
@@ -367,40 +375,6 @@ function displayFiles(/*array*/files) {
 
     // Edge case where user could update the display while still selecting items.
     checkSelected();
-}
-
-function formatSize(/*int*/size) {
-    /*
-    Takes a file size in bytes as an integer,
-    and returns the formatted size as a string.
-    */
-   let mult;
-   let suffix;
-    if (size < 1_000) {
-        return `${size} bytes`
-    } else if (size < 1_000_000) {
-        mult = .01;
-        suffix = "KB";
-    } else if (size < 1_000_000_000) {
-        mult = .00001;
-        suffix = "MB";
-    } else if (size < 1_000_000_000_000) {
-        mult = .00000001;
-        suffix = "GB";
-    }
-    return `${(Math.trunc(size * mult) * .1).toFixed(1)} ${suffix}`;
-}
-
-function formatDate(/*string*/dateString) {
-    // Parses a datetime string and returns a string version of the date
-    let formattedDate = new Date(Date.parse(dateString));
-    return formattedDate.toDateString();
-}
-
-function formatTime(/*string*/dateString) {
-    // Parses a datetime string and returns a string version of the time
-    let formattedDate = new Date(Date.parse(dateString));
-    return formattedDate.toTimeString();
 }
 
 let sortName;
@@ -995,6 +969,11 @@ function selectEvent() {
     let data = JSON.parse(contextItem.getAttribute("data-content"));
     selected.push(data);
     checkSelected();
+}
+
+function loadSettings(/*json*/settings) {
+    if (settings.oneClickPreview)
+        oneClickPreview = settings.oneClickPreview;
 }
 
 var contextMenu;

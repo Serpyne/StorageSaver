@@ -1,0 +1,4 @@
+{
+    "imageQuality": ["Image quality becomes blurry at low resolutions.", "Image quality becomes pixelated at low resolutions."],
+    "oneClickPreview": ["Previewing files is done by a preview button.", "Previewing files is done whenever a file is clicked."]
+}

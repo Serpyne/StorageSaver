@@ -238,6 +238,7 @@ function handleSelection(/*json*/file, /*PointerEvent*/event) {
 }
 
 let metadata;
+let viewerFileName;
 let downsizedImage;
 function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
     /*
@@ -276,6 +277,7 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
     viewerImage.src = galleryImage.src;
     viewerResult.style.backgroundImage = `url('${viewerImage.src}')`
     downsizedImage = viewerImage.src;
+    viewerFileName = image.name
 
     let overlays = viewerResult.children;
     for (let overlay of overlays)
@@ -312,6 +314,11 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
             viewerImage.src = data.base64;
             viewerResult.style.backgroundImage = `url('${data.downsized}')`
             downsizedImage = data.downsized;
+            viewerFileName = fileName;
+
+            let len = viewerFileName.length;
+            if (viewerFileName.slice(len - 3, len) === "gif")
+                viewerResult.style.backgroundImage = `url('${data.base64}')`;
 
             metadata = data.metadata;
             // Populate info panel / image details
@@ -396,10 +403,13 @@ function imageZoom() {
         lens.setAttribute("zoom", zoom);
         
         // If zoomed in enough, make the result the original quality.
-        if (logZoom < -0.6)
-            viewerResult.style.backgroundImage = `url('${viewerImage.src}')`;
-        else
-            viewerResult.style.backgroundImage = `url('${downsizedImage}')`;
+        let len = viewerFileName.length;
+        if (viewerFileName.slice(len - 3, len) !== "gif") {
+            if (logZoom < -0.6)
+                viewerResult.style.backgroundImage = `url('${viewerImage.src}')`;
+            else
+                viewerResult.style.backgroundImage = `url('${downsizedImage}')`;
+        }
 
         let rect = lens.getBoundingClientRect();
         lens.style.width = `${300 * zoom}px`;
@@ -518,6 +528,16 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
     let grey = document.createElement("div");
     grey.id = "item-foreground";
     grey.className = "item-foreground";
+
+    let nameSplit = alt.split(".");
+    let ext = nameSplit[nameSplit.length - 1];
+    if (ext.toLowerCase() === "gif") {
+        let label = document.createElement("h1");
+        label.innerHTML = "GIF";
+        label.className = "gif-label"
+        itemOverlay.appendChild(label);
+    }
+
     itemOverlay.append(grey);
 
     itemOverlay.addEventListener("click", (event) => onItemClick(event, itemOverlay));

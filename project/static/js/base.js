@@ -66,4 +66,7 @@ window.addEventListener("load", (event) => {
     menuContainer = document.getElementById("menu-container");
     
     menuContainer.style.maxHeight = "5rem";
+
+    // Scroll to top of page on load
+    setTimeout("window.scrollTo(0,0);", 200);
 });

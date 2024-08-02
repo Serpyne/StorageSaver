@@ -5,7 +5,7 @@ Routes handling file management
 from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
 
-from .modules.fileloader import FileLoader
+from .modules.fileloader import FileLoader, timer
 from .modules.functions import bitshift_hash, random_name, log
 
 from .models import File, DATE_FORMAT
@@ -69,12 +69,20 @@ def get_file():
     if not file:
         return jsonify({"response": 202})
 
-    # If 'whole' parameter is true, return the base64 encoded entire string
-    if "whole" in data:
-        if data["whole"] == True:
-            value = base64.b64encode(file.value)
+    whole = bool("whole" in data)
+
+    extension = file.extension
+    if file.is_image:
+        file_data = {"value": file.base64}
+        if extension == ".GIF":
+            file_data["type"] = "gif"
         else:
-            value = file.text
+            file_data["type"] = "image"
+        return jsonify({"response": 200, "file": file_data})
+    
+    # If 'whole' parameter is true, return the base64 encoded entire string
+    if whole:
+        value = base64.b64encode(file.value)
     else:
         value = file.text
 
@@ -83,7 +91,7 @@ def get_file():
         "type": ["text", "code"][int(file.is_code)]
     }
     if file.is_code:
-        file_data["language"] = file.extension[1:]
+        file_data["language"] = extension[1:]
 
     return jsonify({"response": 200, "file": file_data})
 
@@ -204,3 +212,11 @@ def download_files():
     log(f"Zip file downloaded, number of files: {len(files)}")
 
     return jsonify({"response": 200, "path": zip_path})
+
+@files.route('/getFileStorage', methods=['POST'])
+@login_required
+def get_file_storage():
+    files = File.query.filter_by(user=current_user.username).all()
+    size = sum([file.size for file in files])
+
+    return jsonify({"response": 200, "size": size})

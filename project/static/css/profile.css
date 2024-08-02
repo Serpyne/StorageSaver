@@ -16,6 +16,10 @@
 }
 
 
+.notification {
+  margin-top: 1rem;
+}
+
 
 .email, .password {
     padding-block-end: 8%;
@@ -59,6 +63,13 @@
     visibility: visible;
 }
 
+
+#change-email {
+  padding: 15px;
+  margin: 60px auto;
+
+  display: none;
+}
 
 
 #change-password {
@@ -115,11 +126,11 @@
 }
 
 input:checked + .slider {
-  background-color: #2196F3;
+  background-color: rgb(42, 172, 159);
 }
 
 input:focus + .slider {
-  box-shadow: 0 0 0.1rem #2196F3;
+  box-shadow: 0 0 0.1rem rgb(42, 172, 159);
 }
 
 input:checked + .slider:before {
@@ -152,6 +163,71 @@ input:checked + .slider:before {
     align-items: center;
 }
 .setting h1 {
-    font-size: x-large;
-    font-weight: 300;
+  font-size: xx-large;
+  font-weight: 500;
+}
+
+
+.circular-progress {
+  --size: 250px;
+  --half-size: calc(var(--size) / 2);
+  --stroke-width: 20px;
+  --radius: calc((var(--size) - var(--stroke-width)) / 2);
+  --circumference: calc(var(--radius) * pi * 2);
+  --dash: calc((var(--progress) * var(--circumference)) / 100);
+  animation: progress-animation 3s cubic-bezier(0.23, 0.96, 1, 1) 0s 1 forwards;
+}
+
+.circular-progress circle {
+  cx: var(--half-size);
+  cy: var(--half-size);
+  r: var(--radius);
+  stroke-width: var(--stroke-width);
+  fill: none;
+  stroke-linecap: round;
+}
+
+.circular-progress circle.bg {
+  stroke: #ddd;
+}
+
+.circular-progress circle.fg {
+  transform: rotate(90deg);
+  transform-origin: var(--half-size) var(--half-size);
+  stroke-dasharray: var(--dash) calc(var(--circumference) - var(--dash));
+  transition: stroke-dasharray 0.3s linear 0s;
+  stroke: #1c7063;
+}
+
+@property --progress {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+#progress-container {
+  margin: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#progress-container h1 {
+  position: absolute;
+  font-size: xx-large;
+}
+
+#progress-labels {
+  display: flex;
+  position: absolute;
+  min-width: 300px;
+  min-height: 250px;
+}
+
+#progress-label {
+  left: 50px;
+  top: 80px;
+}
+#progress-max {
+  right: 50px;
+  bottom: 80px;
 }

@@ -232,6 +232,14 @@ devlog:
     Had to redo some code to solve this.
     Image pixelation setting is applied now. Looking to apply a few more settings,
     maybe even colour customisation but i'm looking to that if I have time for it.
+
+    03/08 2:38 - Midnight before my piano lesson, fulling absolutely terrible but its
+    okay because I got all files done, it was quite easy considering it shares all of the
+    same code as the file manager. The only difference being that it can show images as well as files.
+    Big implementation was the preview of GIFs. Seemed hard so I didn't try it at first but
+    it was basically the same code as showing base64 images, except for things like getting the
+    thumbnail requires me to get the first frame as a PNG and such.
+    It's been a long night, 14.5 hours of coding today.
 """
 
 from flask import Blueprint, render_template, url_for, request, jsonify
@@ -257,10 +265,14 @@ def profile():
     user_settings = current_user.get_all_settings()
     return render_template('profile.html', settings=SETTINGS, user_settings=user_settings)
 
-@main.route('/all_files', methods=["GET"])
+@main.route('/all', methods=["GET"])
 @login_required
 def all_files():
-    ...
+    images = FileLoader()
+    files = images.load_thumbnails()
+
+    user_settings = current_user.get_all_settings()
+    return render_template("all_files.html", files=files, user_settings=user_settings, ignore_highlighting=True)
 
 @main.route('/gallery', methods=["GET"])
 @login_required
@@ -284,7 +296,9 @@ def gallery():
 def file_manager():
     images = FileLoader()
     files = images.load_thumbnails(_type=FILES)
-    return render_template("file_manager.html", files=files, ignore_highlighting=True)
+
+    user_settings = current_user.get_all_settings()
+    return render_template("file_manager.html", files=files, user_settings=user_settings, ignore_highlighting=True)
 
 
 @main.route('/albums', methods=["GET"])
@@ -297,7 +311,9 @@ def albums():
 def recently_deleted():
     images = FileLoader()
     files = images.load_thumbnails(archived=True)
-    return render_template("recently_deleted.html", files=files, ignore_highlighting=True)
+    
+    user_settings = current_user.get_all_settings()
+    return render_template("recently_deleted.html", files=files, user_settings=user_settings, ignore_highlighting=True)
 
 @main.route('/about_us', methods=["GET"])
 @login_required

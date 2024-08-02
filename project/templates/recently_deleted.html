@@ -4,6 +4,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.5.0/themes/prism.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/prism.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/file_bare.css') }}">
+  <script src="{{ url_for('static', filename='js/format.js') }}" type="text/javascript"></script>
   <script src="{{ url_for('static', filename='js/file_bare.js') }}" type="text/javascript"></script>
   <script src="{{ url_for('static', filename='js/recently_deleted.js') }}" type="text/javascript"></script>
 {% endblock %}
@@ -57,5 +58,6 @@
 
 <script type="text/javascript">
   allFiles = {{ files | tojson }};
+  loadSettings(JSON.parse('{{ user_settings | tojson }}'));
 </script>
 {% endblock %}

@@ -28,12 +28,15 @@ class FileLoader:
     def load(self, **keys):
         threads = []
 
-        user_images = File.query.filter(File.user == current_user.username)
+        user_images = File.query.filter(File.user == current_user.username).all()
 
         user_images = [image for image in user_images if image.is_image]
         
         def _load_image(image: File):
-            self.images[f"{image.id}:{image.name}"] = image.resize(height=240)
+            if image.extension == ".GIF":
+                self.images[f"{image.id}:{image.name}"] = image.first_frame
+            else:
+                self.images[f"{image.id}:{image.name}"] = image.resize(height=240)
 
         self.images = {}
         for image in user_images:
@@ -51,7 +54,7 @@ class FileLoader:
 
         return self.images
 
-    def load_thumbnail(self, file, _type=None):
+    def load_thumbnail(self, file):
         file_json = {
             "name": file.name,
             "date_uploaded": file.get_property("date_uploaded"),
@@ -84,7 +87,7 @@ class FileLoader:
 
         self.images = []
         for file in files:
-            threads.append(Thread(target=self.load_thumbnail, args=(file, _type,)))
+            threads.append(Thread(target=self.load_thumbnail, args=(file,)))
 
         for thread in threads:
             thread.start()

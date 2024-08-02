@@ -129,6 +129,8 @@ html {
 
 .notification h1 {
     text-align: center;
+    overflow-y: auto;
+    max-height: 50rem;
 }
 
 #confirm-button {

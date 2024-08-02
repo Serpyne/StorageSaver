@@ -330,3 +330,15 @@ img.gallery-item, .item-overlay {
 .container {
   min-width: 100%;
 }
+
+.gif-label {
+  position: absolute;
+  color: white;
+  z-index: 7;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.5rem;
+  right: 0;
+  bottom: 0;
+  margin: 0.2rem 0.4rem;
+}

@@ -156,21 +156,25 @@ def change_password():
     new_password = data["new-password"]
 
     if not (old_password and new_password):
+        print(1)
         flash("Password must not be empty.")
         return redirect(url_for("main.profile"))
     
     if old_password == new_password:
+        print(2)
         flash("Password must be different to your previous password.")
         return redirect(url_for("main.profile"))
     
     # If password does not match then throw error
     user = User.query.filter_by(password=bitshift_hash(old_password)).first()
     if not user:
+        print(3)
         flash("Please check your password details and try again.")
         return redirect(url_for("main.profile"))
 
     password_check = verify_password(new_password)
     if type(password_check) == list:
+        print(4)
         for notif in password_check:
             flash(notif)
         return redirect(url_for('main.profile'))
