@@ -155,7 +155,7 @@ devlog:
     added to gallery page. Confirmation prompts are now bolded and with line breaks
     to be more readable.
     Files can be permanently deleted in recently deleted.
-        - Looking to start work on file manager
+        - Looking to start work on file manager *
         - Calculate total file storage
         - Overwriting does not rely on archived files
             - Either overwrite file in recently deleted (what is being done now)
@@ -173,7 +173,7 @@ devlog:
     files, but still upload the rest of the files.
     - Next to work on display the uploaded items *
     - Plus an upload notification per file on the bottom left *
-    - Must add right clicking to file manager and recently deleted which parallel the file options.
+    - Must add right clicking to file manager and recently deleted which parallel the file options. *
 
     02/08 11:45 - File manager and recently deleted now share inheritance with 'file_bare.js'.
     This is because they have similar utilities like preview and file selection,
@@ -189,7 +189,7 @@ devlog:
         - Displays files now.
         -> should work on upload notification for file manager. *
         -> After that do file storage calculation.
-        -> Then context menu
+        -> Then context menu *
 
     Ever just put a semicolon after the initilaisation of a for loop. Yeah it doesnt throw an error so youre searching and searching and theres just nothing there
 
@@ -204,7 +204,7 @@ devlog:
     02/08 16:18 - Copying files added, problem was that you couldn't directly copy a File object. You
     would have to save its information without the primary key, being the id. Then you can save
     that as a File object and make changes to it.
-        - Now to do multiple file copying and deletion
+        - Now to do multiple file copying and deletion *
 
     I HATE JAVACSRIPT, WHY ARE FOR LOOPS USING "OF" INSTEAD OF "IN" THATS SO WEIRD
     02/08 16:56 - Implemented overwrite protection when copying files. Now to do multiple file deletion.
@@ -216,14 +216,28 @@ devlog:
     I still need to add the multiselect to the gallery but should be not too hard.
     Multiple file deleting works now on the file manager and recently deleted pages.
         - Storage size calculation
-        - Gallery multi select
+        - Gallery multi select [Nvm i did this ages ago already] *
         - Start all files
+        - Settings (started)
+        - Email verification and email changing
+
+    02/08 20:51 - Gallery fixes, deleting will clear 'selected' array. Selecting is very smooth imo.
+    Just having an issue with showing which items are selected.
+
+    02/08 22:07 - Implemented settings panel in profile page, with autosaving and settings for
+    each user. The settings are encrypted upon saving and decrypted when they are being accessed.
+
+    02/08 22:46 - Fixed 'date taken' sorting in recently deleted.
+    Added grey foregound elements in front of every item overlay which affected selection.
+    Had to redo some code to solve this.
+    Image pixelation setting is applied now. Looking to apply a few more settings,
+    maybe even colour customisation but i'm looking to that if I have time for it.
 """
 
-from flask import Blueprint, render_template, url_for, request
-from flask_login import login_required
+from flask import Blueprint, render_template, url_for, request, jsonify
+from flask_login import login_required, current_user
 
-from .models import File
+from .models import File, SETTINGS
 from .modules.fileloader import FileLoader
 from .modules.fileloader import FILES, IMAGES
 
@@ -240,7 +254,8 @@ def index():
 @main.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html')
+    user_settings = current_user.get_all_settings()
+    return render_template('profile.html', settings=SETTINGS, user_settings=user_settings)
 
 @main.route('/all_files', methods=["GET"])
 @login_required
@@ -262,7 +277,7 @@ def gallery():
     image_json = images.load(archived=None)
     # print([f"{key}: {value[:16]}..." for key, value in image_json.items()])
 
-    return render_template('gallery.html', images=image_json)
+    return render_template('gallery.html', images=image_json, pixelated=current_user.get_setting("imageQuality"))
 
 @main.route('/file_manager', methods=["GET"])
 @login_required

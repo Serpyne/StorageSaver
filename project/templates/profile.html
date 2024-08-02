@@ -76,4 +76,17 @@
 {% endif %}
 {% endwith %}
 
+<div id="settings-container" class="settings-container">
+  <!-- <div class="setting">
+    <label class="switch">
+      <input type="checkbox" onclick="toggleSetting('image-quality')">
+      <span class="slider"></span>
+    </label>
+  </div> -->
+</div>
+
+<script type="text/javascript">
+  loadSettings(JSON.parse('{{settings | tojson}}'), JSON.parse('{{user_settings | tojson}}'));
+</script>
+
 {% endblock %}

@@ -29,6 +29,8 @@ class FileLoader:
         threads = []
 
         user_images = File.query.filter(File.user == current_user.username)
+
+        user_images = [image for image in user_images if image.is_image]
         
         def _load_image(image: File):
             self.images[f"{image.id}:{image.name}"] = image.resize(height=240)
@@ -57,7 +59,7 @@ class FileLoader:
             "size": file.size,
             "src": file.thumbnail
         }
-        if _type == IMAGES:
+        if file.is_image:
             file_json["date_taken"] = file.date
         self.images.append(file_json)
 

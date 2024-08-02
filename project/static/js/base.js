@@ -54,9 +54,8 @@ function toggleMenu() {
         menuButton.style.backgroundColor = "#00b89c";
     } else {
         sideMenu.style.maxWidth = "0";
-        menuContainer.style.maxHeight = "5rem";
         sideMenu.setAttribute("state", "closed");
-        setTimeout("sideMenu.style.paddingInline = '0';", 400);
+        setTimeout("sideMenu.style.paddingInline = '0'; menuContainer.style.maxHeight = '5rem';", 400);
         menuButton.style.backgroundColor = "";
     }
 }

@@ -12,6 +12,7 @@ from . import db
 from io import BytesIO
 from base64 import b64encode, b64decode
 from datetime import datetime
+from .modules.functions import decrypt, encrypt
 
 import json
 import PIL
@@ -35,12 +36,52 @@ JPG_SEQUENCE = b"\xff\xd8"
 
 DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 
+SETTINGS = {
+    "imageQuality": ["Image quality becomes blurry at low resolutions.", "Image quality becomes pixelated at low resolutions."],
+    "test": ["What ", "the sigma"]
+}
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(100))
-    username = db.Column(db.String(1000), unique=True)
+    email = db.Column(db.String(32), unique=True)
+    password = db.Column(db.String(32))
+    username = db.Column(db.String, unique=True)
+    settings = db.Column(db.String)
 
+    def change_setting(self, setting: str, value: str | int | bool | None) -> None:
+        """
+        Change setting to a value
+        """
+        if not self.settings:
+            settings = {}
+        else:
+            settings = json.loads(decrypt(self.settings))
+
+        settings[setting] = value
+
+        self.settings = encrypt(json.dumps(settings))
+
+    def get_setting(self, setting: str) -> str | int | bool | None:
+        if not self.settings:
+            return None
+
+        settings = json.loads(decrypt(self.settings))
+
+        if setting not in settings:
+            return None
+        
+        return settings[setting]
+    
+    def get_all_settings(self) -> dict:
+        user_settings = {}
+
+        for key in SETTINGS.keys():
+            value = self.get_setting(key)
+            if value:
+                user_settings[key] = value
+
+        return user_settings
+    
 class File(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -110,6 +151,7 @@ class File(db.Model):
     @property
     def date(self) -> tuple[int]:
         md = self.get_metadata()
+        print(md)
         if "DateTime" in md:
             date_obj = datetime.strptime(md["DateTime"], "%Y:%m:%d %H:%M:%S")
             return date_obj.strftime(DATE_FORMAT)

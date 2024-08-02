@@ -5,6 +5,7 @@ from os.path import join, dirname
 from datetime import datetime
 from string import ascii_lowercase, ascii_uppercase
 from random import choice
+import base64
 
 def quick_sort():
     ...
@@ -34,11 +35,11 @@ def bitshift_hash(value: str):
     hashed = hex(int(hashed))[2:]
     return hashed
 
-def encrypt():
-    ...
+def encrypt(value: str):
+    return base64.b64encode(value.encode("utf-8"))
 
-def decrypt():
-    ...
+def decrypt(value: str):
+    return base64.b64decode(value).decode("utf-8")
 
 def log(text, filename = ".log", include_datetime=True):
     """

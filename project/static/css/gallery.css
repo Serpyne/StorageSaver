@@ -105,6 +105,16 @@ img.gallery-item, .item-overlay {
   height: 15rem;
   position: relative;
   display: inline-block;
+  filter: brightness(100%);
+}
+
+.item-foreground {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+  background: rgb(0, 0, 0);
+  opacity: 0;
 }
 
 .overlay-content {
@@ -145,8 +155,7 @@ img.gallery-item, .item-overlay {
   -ms-user-select: none;
   user-select: none;
 }
-
-.item-overlay:after, .item-overlay:before {
+.item-overlay:before, .item-overlay:after {
   position: absolute;
   opacity:0;
   transition: all 0.5s;
@@ -179,7 +188,7 @@ img.gallery-item, .item-overlay {
   margin: .5rem;
   width: 2.5rem;
   height: 2.5rem;
-  z-index: 1;
+  z-index: 2;
 
   opacity: 0;
   transition: all 0.5s;
@@ -218,10 +227,6 @@ img.gallery-item, .item-overlay {
   display: none;
 }
 
-#viewer img {
-  /* image-rendering: pixelated; */
-}
-
 #viewer-img {
   width: 60%;
   aspect-ratio: initial;
@@ -250,7 +255,6 @@ img.gallery-item, .item-overlay {
   background-repeat: no-repeat;
   opacity: 0.9;
   position: relative;
-  /* image-rendering: pixelated; */
 }
 
 .viewer-menu {

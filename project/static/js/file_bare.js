@@ -49,7 +49,7 @@ function sortFiles(/*array*/files, /*string*/sortBy, /*const*/sortDirection) {
     If the type between two files is the same, then the filename is compared instead.   
     */
 
-    let sorted;
+    let sorted; 
     if (sortBy === SIZE) {
         sorted = files.sort(function(a, b) {
             if (a.size === b.size)
@@ -364,7 +364,9 @@ function displayFiles(/*array*/files) {
             cell.appendChild(cellContainer);
         }
     }
-    
+
+    // Edge case where user could update the display while still selecting items.
+    checkSelected();
 }
 
 function formatSize(/*int*/size) {
@@ -431,6 +433,14 @@ function update(/*string*/type) {
         sortArrows[index].setAttribute("state", "ascending")
     } else {
         let state = sortArrows[index].getAttribute("state");
+        let dateLabel = sortDate.getElementsByTagName("h1")[0];
+        if (index == 1) {
+            if (dateLabel.innerHTML === "Date Taken")
+                type = DATE_TAKEN;
+            else
+                type = DATE_UPLOADED;
+        }
+
         if (state === "ascending") {
             sortArrows[index].setAttribute("state", "descending");
             sortArrows[index].src = downArrowImg;
@@ -439,13 +449,12 @@ function update(/*string*/type) {
             sortArrows[index].setAttribute("state", "ascending");
             sortArrows[index].src = upArrowImg;
 
-            if (index === 1) { // AKA if type === 'date'
-                let label = sortDate.getElementsByTagName("h1")[0];
-                if (label.innerHTML === "Date Taken") {
-                    label.innerHTML = "Date Uploaded";
+            if (index == 1) { // AKA if type === 'date'
+                if (dateLabel.innerHTML === "Date Taken") {
+                    dateLabel.innerHTML = "Date Uploaded";
                     type = DATE_UPLOADED;
                 } else {
-                    label.innerHTML = "Date Taken";
+                    dateLabel.innerHTML = "Date Taken";
                     type = DATE_TAKEN;
                 }
             }
@@ -901,9 +910,7 @@ function showCopiedItems(/*array*/copiedItems, /*array*/newNames) {
 }
 
 function onRetrievedCopy(/*array*/duplicateFiles, /*array*/copiedItems, /*array*/newNames, overwrite=false) {
-    console.log("orc")
     if (duplicateFiles.length > 0) {
-        console.log("yup");
         handleCopyDuplicates(duplicateFiles, copiedItems);
     } else {
         // If overwrite is true, loop through and prune all of the duplicate names

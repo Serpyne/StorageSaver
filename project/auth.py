@@ -2,13 +2,14 @@
 Routes handling authentication of login and sign up of account, and logging out.
 """
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash
-from flask_login import login_user, logout_user, login_required
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
+from flask_login import login_user, logout_user, login_required, current_user
 
 from .models import User
 from . import db
 from .modules.functions import bitshift_hash, log
 
+import json
 from string import ascii_uppercase, digits
 
 auth = Blueprint('auth', __name__)
@@ -180,3 +181,19 @@ def change_password():
     log(f"Updated {user.username}'s password from {old_password} to {new_password}.")
 
     return redirect(url_for("main.profile"))
+
+@auth.route('/changeSetting', methods=['POST'])
+@login_required
+def change_setting():
+    data = json.loads(request.data)
+
+    if ("setting" not in data or "value" not in data):
+        return jsonify({"response": 304})
+
+    setting = data["setting"]
+    value = data["value"]
+
+    current_user.change_setting(setting, value)
+    db.session.commit()
+
+    return jsonify({"response": 200})

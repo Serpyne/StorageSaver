@@ -5,7 +5,6 @@ var body;
 
 var viewer;
 var viewerImage;
-var viewerMenu;
 var viewerResult;
 
 var sidemenu;
@@ -34,17 +33,18 @@ function destroyLoadingScreen() {
 }
 
 function setState(selectButton, state) {
+    let foreground = selectButton.parentElement.getElementsByClassName("item-foreground")[0];
     if (state == "true") {
         selectButton.setAttribute("state", "true");
         selectButton.src = "static/icons/selected.png";
         selectButton.style.opacity = 1;
-        selectButton.parentElement.style.opacity = 1;
+        foreground.style.opacity = 0.7;
 
     } else if (state == "false") {
         selectButton.setAttribute("state", "false");
         selectButton.src = "static/icons/unselected.png";
         selectButton.style = "";
-        selectButton.parentElement.style = "";
+        foreground.style = "";
     }
 }
 
@@ -272,7 +272,8 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
 
     // Display the viewer and show the image in low quality (first)
     viewer.style.display = "flex";
-    viewerImage.src = item.firstElementChild.src;
+    let galleryImage = item.getElementsByClassName("gallery-item")[0];
+    viewerImage.src = galleryImage.src;
     viewerResult.style.backgroundImage = `url('${viewerImage.src}')`
     downsizedImage = viewerImage.src;
 
@@ -293,7 +294,6 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
     // Make result viewer square
     viewerResult.style.width = `${viewerResult.getBoundingClientRect().height}px`;
 
-    viewerMenu.style.display = "flex";
     uploadContainer.style.display = "none";
 
     // Get image data from backend
@@ -476,7 +476,6 @@ function closeViewer(/*PointerEvent*/event, /*bool*/force = false) {
 
     viewer.style.display = "none";
     viewerImage.src = "";
-    viewerMenu.style.display = "none";
     
     infoButton.style.display = "none";
     uploadContainer.style.display = "flex";
@@ -515,6 +514,11 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
     let itemOverlay = document.createElement("div");
     itemOverlay.className = "item-overlay";
     itemOverlay.setAttribute("data-content", alt);
+
+    let grey = document.createElement("div");
+    grey.id = "item-foreground";
+    grey.className = "item-foreground";
+    itemOverlay.append(grey);
 
     itemOverlay.addEventListener("click", (event) => onItemClick(event, itemOverlay));
     // On right click
@@ -684,10 +688,9 @@ function deleteImages() {
     });
     buttons.confirm.id = "confirm-button";
     buttons.confirm.addEventListener("click", () => {
-        for (let item of removedItems) {
-            console.log(item)
+        for (let item of removedItems)
             getElementFromFileName(item).remove();
-        }
+        
         // Add images to recently deleted
         fetch("/archiveFiles", {
             method: "POST",
@@ -705,6 +708,8 @@ function deleteImages() {
         if (galleryBox.getElementsByClassName("gallery-item").length === 0)
             labelNothing.style.display = "";
         clearNotifications();
+
+        selected = [];
     });
     buttons.cancel.id = "cancel-button";
     buttons.cancel.onclick = clearNotifications;
@@ -741,10 +746,13 @@ function handleContextMenu(/*PointerEvent*/event) {
     event.preventDefault();
     hideContextMenu();
 
-    if (event.target.className !== "item-overlay") 
+    if (event.target.className === "item-overlay")
+        contextItem = event.target;
+    else if (event.target.parentElement.className === "item-overlay")
+        contextItem = event.target.parentElement;
+    else
         return;
 
-    contextItem = event.target;
 
     showContextMenu(event);
 }
@@ -753,8 +761,10 @@ function selectEvent() {
     if (!contextItem)
         return;
 
-    let data = JSON.parse(contextItem.getAttribute("data-content"));
-    selected.push(data);
+    let name = contextItem.getAttribute("data-content");
+
+    handleSelection({name: name}, {shiftKey: false, ctrlKey: true});
+    
     checkSelected();
 }
 
@@ -878,7 +888,6 @@ window.addEventListener("load", (event) => {
     // Viewer declaration
     viewer = document.getElementById("viewer");
     viewerImage = document.getElementById("viewer-img");
-    viewerMenu = document.getElementById("viewer-menu");
     viewerResult = document.getElementById("viewer-zoom");
     infoButton = document.getElementById("info-button");
     infoPanel = document.getElementById("info-panel")
