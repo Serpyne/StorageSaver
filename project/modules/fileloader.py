@@ -23,6 +23,7 @@ def timer(func):
     return wrapper
 
 class FileLoader:
+    images = []
     @timer
     def load(self, **keys):
         threads = []
@@ -48,6 +49,20 @@ class FileLoader:
 
         return self.images
 
+    def load_thumbnail(self, file, _type=None):
+        file_json = {
+            "name": file.name,
+            "date_uploaded": file.get_property("date_uploaded"),
+            "type": file.type,
+            "size": file.size,
+            "src": file.thumbnail
+        }
+        if _type == IMAGES:
+            file_json["date_taken"] = file.date
+        self.images.append(file_json)
+
+        return file_json
+        
     @timer
     def load_thumbnails(self, _type=None, archived: bool = False):
         threads = []
@@ -56,29 +71,18 @@ class FileLoader:
 
         if archived:
             files = [file for file in files if file.get_property("archived")]
+        else:
+            files = [file for file in files if not file.get_property("archived")]
 
         if _type == IMAGES:
             files = [file for file in files if file.extension in IMAGE_EXTENSIONS]
         elif _type == FILES:
-            print([file.extension for file in files])
             files = [file for file in files if file.extension not in IMAGE_EXTENSIONS]
         # If type is None -> all files
 
-        def _load_thumbnail(file):
-            file_json = {
-                "name": file.name,
-                "date_uploaded": file.get_property("date_uploaded"),
-                "type": file.type,
-                "size": file.size,
-                "src": file.thumbnail
-            }
-            if _type == IMAGES:
-                file_json["date_taken"] = file.date
-            self.images.append(file_json)
-        
         self.images = []
         for file in files:
-            threads.append(Thread(target=_load_thumbnail, args=(file,)))
+            threads.append(Thread(target=self.load_thumbnail, args=(file, _type,)))
 
         for thread in threads:
             thread.start()

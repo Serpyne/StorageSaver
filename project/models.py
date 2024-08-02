@@ -130,7 +130,7 @@ class File(db.Model):
     def thumbnail(self):
         # Returns a 32x32 cropped version of the image.
         # If it is not an image file, then it returns a file icon.
-        if self.extension not in ".PNG .JPEG .JPG".split():
+        if not self.is_image:
             return FILE_SRC
         
         dims = self.dims
@@ -151,6 +151,26 @@ class File(db.Model):
         elif extension == ".JPEG":
             return JPG_START + img_str.decode("utf-8")
         
+    @property
+    def is_image(self):
+        return self.extension in [".PNG", ".JPEG", ".JPG"]
+
+    @property
+    def is_code(self):
+        return self.extension in [".PY", ".JS", ".CSS", ".HTML", ".AHK", ".C", ".CPP", ".CS", ".LUA", ".VB", ".VBA", ".JSON"]
+
+    @property
+    def text(self):
+        if self.is_image:
+            return self.base64
+        
+        try:
+            data = self.value.decode('utf-8')
+        except UnicodeDecodeError:
+            return "File format is not supported for decoding."
+
+        return data
+
     # Image methods
 
     @property

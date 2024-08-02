@@ -75,7 +75,6 @@ def upload_image():
         # Base64 File is sometimes rotated 90 degrees clockwise.
         # Rotate it back if the orientation is that.
         if image_object.orientation == 8:
-            print("rotated")
             image_object.value = image_object.rotate_left()
 
         file_objects.append(image_object)

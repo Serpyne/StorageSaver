@@ -4,6 +4,7 @@ Routes handling file management
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
+from .modules.fileloader import FileLoader
 
 from .models import File, DATE_FORMAT
 from . import db
@@ -16,7 +17,7 @@ files = Blueprint('files', __name__)
 
 @files.route('/uploadFile', methods=['POST'])
 @login_required
-def upload_files():
+def upload_file():
     data = json.loads(request.data)
 
     name = data["name"]
@@ -46,7 +47,31 @@ def upload_files():
     db.session.add(new_file)
     db.session.commit()
 
-    return jsonify({"response": 200})
+    images = FileLoader()
+    file_data = images.load_thumbnail(new_file)
+
+    return jsonify({"response": 200, "file": file_data})
+
+
+@files.route('/getFile', methods=['POST'])
+@login_required
+def get_file():
+    data = json.loads(request.data)
+    if "name" not in data:
+        return jsonify({"response": 204})
+
+    file = File.query.filter_by(name=data["name"], user=current_user.username).first()
+    if not file:
+        return jsonify({"response": 202})
+
+    file_data = {
+        "value": file.text,
+        "type": ["text", "code"][int(file.is_code)]
+    }
+    if file.is_code:
+        file_data["language"] = file.extension[1:]
+
+    return jsonify({"response": 200, "file": file_data})
 
 @files.route('/archiveFiles', methods=['POST'])
 @login_required

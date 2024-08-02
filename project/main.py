@@ -171,9 +171,21 @@ devlog:
     Overwrite works a lot better too. It stops image files first, then overwrite
     has another option named 'skip' which you can use to not overwrite the duplicate
     files, but still upload the rest of the files.
-    - Next to work on display the uploaded items
+    - Next to work on display the uploaded items *
     - Plus an upload notification per file on the bottom left
     - Must add right clicking to file manager and recently deleted which parallel the file options.
+
+    02/08 11:45 - File manager and recently deleted now share inheritance with 'file_bare.js'.
+    This is because they have similar utilities like preview and file selection,
+    however some things will differ like restoration and uploading.
+    Fixed retrieving archived or non-archived files in ImageLoader.load_thumbnails(archived<bool>)
+    Added code blocks to file previews where the file supports it.
+    Uploading works well except changed the 'skip' option to just skip over duplicate files and the first
+    upload request will upload all of the files that it can.
+        - Displays files now.
+        -> should work on upload notification for file manager.
+        -> After that do file storage calculation.
+        -> Then context menu
 """
 
 from flask import Blueprint, render_template, url_for, request
@@ -225,7 +237,7 @@ def gallery():
 def file_manager():
     images = FileLoader()
     files = images.load_thumbnails(_type=FILES)
-    return render_template("file_manager.html", files=files)
+    return render_template("file_manager.html", files=files, ignore_highlighting=True)
 
 
 @main.route('/albums', methods=["GET"])
@@ -238,9 +250,13 @@ def albums():
 def recently_deleted():
     images = FileLoader()
     files = images.load_thumbnails(archived=True)
-    return render_template("recently_deleted.html", files=files)
+    return render_template("recently_deleted.html", files=files, ignore_highlighting=True)
 
 @main.route('/about_us', methods=["GET"])
 @login_required
 def about_us():
     ...
+
+@main.route('/test', methods=["GET"])
+def test():
+    return render_template("test.html", ignore_highlighting=True)
