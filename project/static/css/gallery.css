@@ -352,10 +352,6 @@ img.gallery-item, .item-overlay {
   padding-inline: 1rem;
 }
 
-.loading-image {
-  height: 2rem;
-  padding-inline-end: 1rem;
-}
 
 .container {
   min-width: 100%;

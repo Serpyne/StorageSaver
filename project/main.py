@@ -172,7 +172,7 @@ devlog:
     has another option named 'skip' which you can use to not overwrite the duplicate
     files, but still upload the rest of the files.
     - Next to work on display the uploaded items *
-    - Plus an upload notification per file on the bottom left
+    - Plus an upload notification per file on the bottom left *
     - Must add right clicking to file manager and recently deleted which parallel the file options.
 
     02/08 11:45 - File manager and recently deleted now share inheritance with 'file_bare.js'.
@@ -187,9 +187,19 @@ devlog:
     and if this boolean value is true, then some of the classes and inheritance is individuallised
     such that the two packages can work in tandem.
         - Displays files now.
-        -> should work on upload notification for file manager.
+        -> should work on upload notification for file manager. *
         -> After that do file storage calculation.
         -> Then context menu
+
+    Ever just put a semicolon after the initilaisation of a for loop. Yeah it doesnt throw an error so youre searching and searching and theres just nothing there
+
+    02/08 14:44 - The user can now download files within zip files. This is done from the backend,
+    the name of the zip file is a 5-character long random string with the hash function applied.
+    Therefore the chance of two zips having the same name is one in 52^5 (Both upper and lowercase chars).
+    The list of file names are parsed in and the values are retrieved. As such, these names and values
+    are written as bytes into a zipped folder using the Python module 'zipfile'.
+        * However, the date modified of the downloaded files are not retained.
+    Also an upload notification shows up for every file that is uploaded now.
 """
 
 from flask import Blueprint, render_template, url_for, request

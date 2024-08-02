@@ -2,7 +2,7 @@
 Routes handling authentication of login and sign up of account, and logging out.
 """
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
+from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required
 
 from .models import User

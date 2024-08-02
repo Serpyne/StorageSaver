@@ -3,6 +3,8 @@
 from path import Path
 from os.path import join, dirname
 from datetime import datetime
+from string import ascii_lowercase, ascii_uppercase
+from random import choice
 
 def quick_sort():
     ...
@@ -55,3 +57,7 @@ def log(text, filename = ".log", include_datetime=True):
         f.write(text)
     
     print(text)
+
+LETTERS = [x for x in (ascii_lowercase + ascii_uppercase)]
+def random_name(length: int):
+    return "".join([choice(LETTERS) for _ in range(length)])

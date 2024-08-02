@@ -9,8 +9,12 @@ const SIZE = "size";
 
 const ASCENDING = 0x8c;
 const DESCENDING = 0x19;
+
 var globalSortBy;
 var globalSortDirection;
+
+// How long after a file is uploaded that it will fade away.
+const UPLOAD_FADE_SECONDS = 5;
 
 // Declare HTML Elements
 let fileManager;

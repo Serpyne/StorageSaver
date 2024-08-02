@@ -178,7 +178,7 @@ class File(db.Model):
         if not self.extension:
             self.value = JPG_SEQUENCE + self.value
         return BytesIO(self.value)
-    
+
     @property
     def image(self) -> PIL.Image.Image:
         return PIL.Image.open(self.bytesio)

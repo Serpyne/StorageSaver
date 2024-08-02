@@ -14,7 +14,6 @@ function handleSelection(/*json*/file, /*PointerEvent*/event) {
         let sameFile = false;
         if (selected.length <= 1) {
             if (selected.length === 1) {
-                console.log(selected[0].name, file.name)
                 if (selected[0].name == file.name)
                     sameFile = true;
             }
@@ -62,6 +61,10 @@ function handleSelection(/*json*/file, /*PointerEvent*/event) {
     
     // Click + shift - selected all files between previously selected file and current file
     } else if (event.shiftKey && !event.ctrlKey) {
+        if (selected.length === 0) {
+            handleSelection(file, {shiftKey: false, ctrlKey: true});
+            return;
+        }
         previous = getElementFromFileName(selected[selected.length - 1].name);
         current = row;
 
@@ -116,7 +119,6 @@ function sendDeleteRequest(/*array*/images) {
         })
         .then(response => response.json())
         .then(data => {
-            console.log(data);
         })
         .catch(error => console.log(error))
 }
@@ -135,6 +137,61 @@ function deleteFiles() {
     buttons.confirm.id = "confirm-button";
     buttons.confirm.addEventListener("click", () => {
         sendDeleteRequest(images);
+        clearNotifications();
+        selected = [];
+        fileOptions.style = "";
+    });
+    buttons.cancel.id = "cancel-button";
+    buttons.cancel.onclick = clearNotifications;
+}
+
+function confirmDownloadRequest(/*string*/zipPath) {
+    // Sends a delete image request to the backend.
+    fetch("/downloadFiles", {
+            method: "POST",
+            body: JSON.stringify({path: zipPath}),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+}
+
+function sendDownloadRequest(/*array*/files) {
+    // Sends a delete image request to the backend.
+    fetch("/downloadFiles", {
+            method: "POST",
+            body: JSON.stringify(files),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            selected = [];
+            checkSelected();
+
+            // Automatically give the current user the download.
+            window.location = data.path;
+            // After ten seconds, the zip file will be deleted. [Should adjust in case of larger files?]
+            setTimeout(`confirmDownloadRequest('${data.path}')`, 1000 * 10);
+        })
+        .catch(error => console.log(error))
+}
+
+function downloadFiles() {
+    let files = [];
+    for (let item of selected)
+        files.push(item.name);
+
+    let buttons = createNotification(`<b>Are you sure you want to download these images?</b><br> ${files.join("<br>")}`,
+        {
+            confirm: 'Confirm',
+            cancel: 'Cancel' 
+        }
+    );
+    buttons.confirm.id = "confirm-button";
+    buttons.confirm.addEventListener("click", () => {
+        sendDownloadRequest(files);
         clearNotifications();
         selected = [];
         fileOptions.style = "";
@@ -178,20 +235,24 @@ function handleUploadResponses(duplicateFiles, imageFiles, files) {
     // Callback function handling responses involving duplicate files and if the files contain images.
     // Can only be called after all of the fetches have been called.
     if (imageFiles.length > 0) {
+        let text;
         let imageFilenames = [];
-        for (file of imageFiles);
+        for (file of imageFiles)
             imageFilenames.push(file.name);
 
-        filenames = [];
+        let filenames = [];
         let filesData = [];
-        for (file in files) {
+        for (file of files) {
             if (!imageFilenames.includes(file.name)) {
                 filenames.push(file.name);
-                filesData.push(file)
+                filesData.push(file);
             }
         }
         
-        let text = `<i>Image files can only be uploaded in 'All Files' or the 'Gallery'</i><br><b>Only these files will be uploaded: </b><br> ${filenames.join("<br>")}`;
+        if (filenames.length > 0)
+            text = `<i>Image files can only be uploaded in 'All Files' or the 'Gallery'</i><br><b>Only these files will be uploaded: </b><br> ${filenames.join("<br>")}`;
+        else 
+            text = `<i>Image files can only be uploaded in 'All Files' or the 'Gallery'</i>`
         let buttons = createNotification(text, options={confirm: "Okay"});
 
         buttons.confirm.id = "confirm-button";
@@ -220,8 +281,10 @@ function sendUploadRequest(/*array*/files, /*bool*/overwrite = false) {
     let uploadCount = 0;
     for (let file of files) {
         // Overwrite option
-        if (overwrite)
+        if (overwrite) 
             file.overwrite = 1;
+
+        let uploadNotification = uploadNotifications[file.name];
 
         fetch("/uploadFile", {
             method: "POST",
@@ -232,16 +295,30 @@ function sendUploadRequest(/*array*/files, /*bool*/overwrite = false) {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.response === 201)
+            if (data.response === 201) {
                 duplicateFiles.push(file);
-            else if (data.response === 300)
+            } else if (data.response === 300) {
                 imageFiles.push(file);
-            
-            allFiles.push(data.file);
-            displayFiles(sortFiles(allFiles, globalSortBy, globalSortDirection));
+                uploadNotification.innerHTML = `${file.name} could not be uploaded.`;
+                setTimeout(`removeUploadNotification('${file.name}');`, 1000 * UPLOAD_FADE_SECONDS);
+            } else {
+                if (overwrite) {
+                    for (let item of allFiles) {
+                        if (item.name === data.file.name)
+                            allFiles.splice(allFiles.indexOf(item), 1);
+                    }
+                }
+                allFiles.push(data.file);
+
+                displayFiles(sortFiles(allFiles, globalSortBy, globalSortDirection));
+
+                uploadNotification.innerHTML = `Uploaded ${file.name}`;
+
+                setTimeout(`removeUploadNotification('${file.name}');`, 1000 * UPLOAD_FADE_SECONDS);
+            }
 
             uploadCount++;
-
+            
             if (uploadCount === files.length)
                 handleUploadResponses(duplicateFiles=duplicateFiles, imageFiles=imageFiles, files=files);
         })
@@ -249,6 +326,25 @@ function sendUploadRequest(/*array*/files, /*bool*/overwrite = false) {
     }
 }
 
+function removeUploadNotification(/*string*/filename) {
+    let uploadNotification = uploadNotifications[filename];
+    uploadNotification.style.opacity = 0;
+    setTimeout(`uploadNotifications['${filename}'].remove()`, 1500);
+}
+
+function notifyUpload(/*string*/filename) {
+    let uploadNotification = document.createElement("div");
+    uploadNotification.className = "upload-notification";
+    let loading = document.createElement("img");
+    loading.className = "loading-image";
+    loading.src = "/static/icons/loading.gif";
+    uploadNotification.appendChild(loading);
+    uploadNotification.appendChild(document.createTextNode(`Uploading ${filename}`));
+    uploadQueue.appendChild(uploadNotification);
+    return uploadNotification;
+}
+
+let uploadNotifications = {};
 function uploadEvent() {
     let files = uploadButton.files;
     
@@ -264,6 +360,8 @@ function uploadEvent() {
                 value: value
             });
 
+            uploadNotifications[file.name] = notifyUpload(file.name);
+
             uploadCount++;
 
             if (uploadCount === uploadButton.files.length) {
@@ -278,6 +376,7 @@ function uploadEvent() {
 }
 
 var uploadButton;
+var uploadQueue;
 
 window.addEventListener("load", () => {
     body = document.getElementsByClassName("hero-body")[0]; 
@@ -288,6 +387,8 @@ window.addEventListener("load", () => {
     closePreviewButton = document.getElementById("close-preview");
     navbar.appendChild(fileOptions);
     navbar.appendChild(previewButton);
+
+    uploadQueue = document.getElementById("upload-queue");
 
     previewFrame = document.getElementById("preview");
     previewContainer = document.getElementById("preview-container");

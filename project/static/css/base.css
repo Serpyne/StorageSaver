@@ -155,3 +155,10 @@ html {
   border-radius: 0.5rem;
   padding: 0.5rem;
 }
+
+
+.loading-image {
+    height: 2rem;
+    padding-inline-end: 1rem;
+  }
+  

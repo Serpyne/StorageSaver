@@ -19,9 +19,9 @@
     <h1>Files Selected:</h1>
   </div>
 
-  <div title="Restore" id="restore-button" class="file-option-button" onclick="restoreFiles()">
-    <img src="{{ url_for('static', filename='icons/undo.png')}}" alt="Restore" />
-    <h1 class="file-option-button-label">Restore</h1>
+  <div title="Download" id="download-button" class="file-option-button" onclick="downloadFiles()">
+    <img src="{{ url_for('static', filename='icons/download.png')}}" alt="Download" />
+    <h1 class="file-option-button-label">Download</h1>
   </div>
 
   <div title="Select All" id="select-all-button" class="file-option-button" onclick="selectAll()">
@@ -63,6 +63,8 @@
   <div id="preview" class="preview"></div>
   <h1 id="close-preview" class="close-button" onclick="closePreview()">Close</h1>
 </div>
+
+<div id="upload-queue" class="upload-queue"></div>
 
 <script type="text/javascript">
   allFiles = {{ files | tojson }};
