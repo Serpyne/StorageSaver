@@ -737,7 +737,6 @@ window.addEventListener("load", (event) => {
     
     body = document.getElementsByClassName("hero-body")[0];
     let menu = document.getElementById("contextMenu");
-    body.appendChild(menu);
 
     // More declaration
     galleryBox = document.getElementById("gallery-box");

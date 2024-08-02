@@ -89,6 +89,6 @@ class FileLoader:
 
         for thread in threads:
             thread.join()
-
+            
         return self.images
     

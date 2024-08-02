@@ -160,5 +160,37 @@ html {
 .loading-image {
     height: 2rem;
     padding-inline-end: 1rem;
-  }
+}
   
+  
+.context-menu {
+  display: none;
+  position: absolute;
+  text-align: center;
+  background: rgb(153, 153, 153);
+  box-shadow: 0 2px 3px rgba(10, 10, 10, .1), 0 0 0 1px rgba(10, 10, 10, .1);
+  border-radius: .5rem;
+  z-index: 3;
+}
+
+.context-menu ul {
+  padding: 0px;
+  margin: 0px;
+  min-width: 150px;
+  list-style: none;
+}
+
+.context-menu ul li {
+  margin-bottom: .3rem;
+  margin-top: .3rem;
+  border-radius: .5rem;
+}
+
+.context-menu ul li a {
+  text-decoration: none;
+  color: rgb(255, 255, 255);
+}
+
+.context-menu ul li:hover {
+  background: rgb(57, 91, 79);
+}

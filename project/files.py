@@ -25,7 +25,6 @@ files = Blueprint('files', __name__)
 @login_required
 def upload_file():
     data = json.loads(request.data)
-
     name = data["name"]
     value = data["value"]
     user = current_user.username
@@ -70,14 +69,59 @@ def get_file():
     if not file:
         return jsonify({"response": 202})
 
+    # If 'whole' parameter is true, return the base64 encoded entire string
+    if "whole" in data:
+        if data["whole"] == True:
+            value = base64.b64encode(file.value)
+        else:
+            value = file.text
+    else:
+        value = file.text
+
     file_data = {
-        "value": file.text,
+        "value": value,
         "type": ["text", "code"][int(file.is_code)]
     }
     if file.is_code:
         file_data["language"] = file.extension[1:]
 
     return jsonify({"response": 200, "file": file_data})
+
+@files.route('/copyFile', methods=['POST'])
+@login_required
+def copy_file():
+    data = json.loads(request.data)
+    if "name" not in data:
+        return jsonify({"response": 204})
+
+    overwrite = bool("overwrite" in data)
+
+    file = File.query.filter_by(name=data["name"], user=current_user.username).first()
+    if not file:
+        return jsonify({"response": 202})
+
+    split_name = data["name"].split(".")
+    new_name = ".".join(split_name[:-1]) + " - Copy." + split_name[-1]
+
+    same_file = File.query.filter_by(name=new_name, user=current_user.username).first()
+    if same_file:
+        if not overwrite:
+            return jsonify({"response": 300, "name": new_name})
+        else:
+            db.session.delete(same_file)
+
+    table = file.__table__
+    non_pk_columns = [k for k in table.columns.keys() if k not in table.primary_key]
+
+    file_info = {c: getattr(file, c) for c in non_pk_columns}
+    new_file = File(**file_info)
+
+    new_file.name = new_name
+
+    db.session.add(new_file)
+    db.session.commit()
+
+    return jsonify({"response": 200, "name": new_name})
 
 @files.route('/archiveFiles', methods=['POST'])
 @login_required

@@ -50,8 +50,13 @@ function sortFiles(/*array*/files, /*string*/sortBy, /*const*/sortDirection) {
     */
 
     let sorted;
-    if (sortBy === SIZE)
-        sorted = files.sort(function(a, b) {return a.size - b.size});
+    if (sortBy === SIZE) {
+        sorted = files.sort(function(a, b) {
+            if (a.size === b.size)
+                return a.name.localeCompare(b.name)
+            return a.size - b.size}
+        );
+    }
 
     else if (sortBy === DATE_TAKEN) {
         sorted = files.sort(function(a, b) {
@@ -413,7 +418,7 @@ function hideArrows() {
     }
 }
 
-function update(type) {
+function update(/*string*/type) {
     /*
     Handling the sorting and updating the file display after one of the sorting headers is clicked.
     */
@@ -452,5 +457,505 @@ function update(type) {
     globalSortDirection = direction;
 }
 
+// File Manipulation
 // restoreFiles() is unique to 'Recently Deleted'
-// deleteFiles() in file manager is archive while it is permanent deletion in recently deleted.
+
+function sendArchiveRequest(/*array*/images) {
+    // Sends a delete image request to the backend, and deletes the images on the site.
+    for (let item of images)
+        getElementFromFileName(item).remove();
+
+    fetch("/archiveFiles", {
+            method: "POST",
+            body: JSON.stringify({
+                images: images
+            }),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+        })
+        .catch(error => console.log(error))
+}
+
+function archiveFiles() {
+    let images = [];
+    for (let item of selected)
+        images.push(item.name);
+
+    let buttons = createNotification(`<i>They can be restored from Recently Deleted.</i><br><b>Are you sure you want to delete these images?</b><br> ${images.join("<br>")}`,
+        {
+            confirm: 'Confirm',
+            cancel: 'Cancel' 
+        }
+    );
+    buttons.confirm.id = "confirm-button";
+    buttons.confirm.addEventListener("click", () => {
+        // Remove selected files from global files variable
+        let filenames = [];
+        for (let item of selected) {
+            filenames.push(item.name);
+        }
+
+        let newAllFiles = [];
+        for (let file of allFiles) {
+            if (!filenames.includes(file.name))
+                newAllFiles.push(file);
+        }
+        allFiles = newAllFiles;
+        
+        sendArchiveRequest(images);
+        clearNotifications();
+
+        selected = [];
+        fileOptions.style = "";
+    });
+    buttons.cancel.id = "cancel-button";
+    buttons.cancel.onclick = clearNotifications;
+}
+
+function confirmDownloadRequest(/*string*/zipPath) {
+    // Sends a delete image request to the backend.
+    fetch("/downloadFiles", {
+            method: "POST",
+            body: JSON.stringify({path: zipPath}),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+}
+
+function sendDownloadRequest(/*array*/files) {
+    // Sends a delete image request to the backend.
+    fetch("/downloadFiles", {
+            method: "POST",
+            body: JSON.stringify(files),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            selected = [];
+            checkSelected();
+
+            // Automatically give the current user the download.
+            window.location = data.path;
+            // After ten seconds, the zip file will be deleted. [Should adjust in case of larger files?]
+            setTimeout(`confirmDownloadRequest('${data.path}')`, 1000 * 10);
+        })
+        .catch(error => console.log(error))
+}
+
+function downloadFiles() {
+    let files = [];
+    for (let item of selected)
+        files.push(item.name);
+
+    let buttons = createNotification(`<b>Are you sure you want to download these files?</b><br> ${files.join("<br>")}`,
+        {
+            confirm: 'Confirm',
+            cancel: 'Cancel' 
+        }
+    );
+    buttons.confirm.id = "confirm-button";
+    buttons.confirm.addEventListener("click", () => {
+        sendDownloadRequest(files);
+        clearNotifications();
+        selected = [];
+        fileOptions.style = "";
+    });
+    buttons.cancel.id = "cancel-button";
+    buttons.cancel.onclick = clearNotifications;
+}
+
+let filenames;
+function handleDuplicates(/*array*/duplicateFiles, /*array*/allFiles) {
+    // Handling duplicate files
+    filenames = [];
+    for (let file of duplicateFiles)
+        filenames.push(file.name);
+
+    let buttons = createNotification(`<b>Files are conflicting with existing files, do you want to overwrite them?: </b><br> ${filenames.join("<br>")}`, options={
+        confirm: "Yes",
+        skip: "Skip these files",
+        cancel: "No"
+    });
+    buttons.confirm.id = "confirm-button";
+    buttons.confirm.addEventListener("click", () => {
+        sendUploadRequest(allFiles, overwrite=true);
+        clearNotifications();
+    });
+    buttons.skip.id = "confirm-button";
+    buttons.skip.addEventListener("click", () => {
+        // for (let file in duplicateFiles) {
+        //     let index = allFiles.indexOf(file);
+        //     allFiles.splice(index, 1);
+        // }
+        // sendUploadRequest(allFiles);
+        clearNotifications();
+    });
+    buttons.cancel.id = "cancel-button";
+    buttons.cancel.onclick = clearNotifications;
+}
+
+function handleUploadResponses(duplicateFiles, imageFiles, files) {
+    // Callback function handling responses involving duplicate files and if the files contain images.
+    // Can only be called after all of the fetches have been called.
+    if (imageFiles.length > 0) {
+        let text;
+        let imageFilenames = [];
+        for (file of imageFiles)
+            imageFilenames.push(file.name);
+
+        let filenames = [];
+        let filesData = [];
+        for (file of files) {
+            if (!imageFilenames.includes(file.name)) {
+                filenames.push(file.name);
+                filesData.push(file);
+            }
+        }
+        
+        if (filenames.length > 0)
+            text = `<i>Image files can only be uploaded in 'All Files' or the 'Gallery'</i><br><b>Only these files will be uploaded: </b><br> ${filenames.join("<br>")}`;
+        else 
+            text = `<i>Image files can only be uploaded in 'All Files' or the 'Gallery'</i>`
+        let buttons = createNotification(text, options={confirm: "Okay"});
+
+        buttons.confirm.id = "confirm-button";
+        buttons.confirm.addEventListener("click", () => {
+            sendUploadRequest(filesData);
+            clearNotifications();
+        });
+
+    } else {
+        if (duplicateFiles.length > 0)
+            handleDuplicates(duplicateFiles, files);
+    }
+}
+
+let duplicateFiles;
+let imageFiles;
+let file;
+function sendUploadRequest(/*array*/files, /*bool*/overwrite = false) {
+    /*
+    Send an upload request to backend file by file.
+    Therefore the path '/uploadFile' will receive a request for each file in the list.
+    */
+    duplicateFiles = [];
+    imageFiles = [];
+
+    let uploadCount = 0;
+    for (let file of files) {
+        // Overwrite option
+        if (overwrite) 
+            file.overwrite = 1;
+
+        let uploadNotification = uploadNotifications[file.name];
+
+        fetch("/uploadFile", {
+            method: "POST",
+            body: JSON.stringify(file),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.response === 201) {
+                duplicateFiles.push(file);
+            } else if (data.response === 300) {
+                imageFiles.push(file);
+                uploadNotification.innerHTML = `${file.name} could not be uploaded.`;
+                setTimeout(`removeUploadNotification('${file.name}');`, 1000 * UPLOAD_FADE_SECONDS);
+            } else {
+                if (overwrite) {
+                    for (let item of allFiles) {
+                        if (item.name === data.file.name)
+                            allFiles.splice(allFiles.indexOf(item), 1);
+                    }
+                }
+                allFiles.push(data.file);
+
+                displayFiles(sortFiles(allFiles, globalSortBy, globalSortDirection));
+
+                uploadNotification.innerHTML = `Uploaded ${file.name}`;
+
+                setTimeout(`removeUploadNotification('${file.name}');`, 1000 * UPLOAD_FADE_SECONDS);
+            }
+
+            uploadCount++;
+            
+            if (uploadCount === files.length)
+                handleUploadResponses(duplicateFiles=duplicateFiles, imageFiles=imageFiles, files=files);
+        })
+        .catch(error => console.log(error));
+    }
+}
+
+function removeUploadNotification(/*string*/filename) {
+    let uploadNotification = uploadNotifications[filename];
+    uploadNotification.style.opacity = 0;
+    setTimeout(`uploadNotifications['${filename}'].remove()`, 1500);
+}
+
+function notifyUpload(/*string*/filename) {
+    let uploadNotification = document.createElement("div");
+    uploadNotification.className = "upload-notification";
+    let loading = document.createElement("img");
+    loading.className = "loading-image";
+    loading.src = "/static/icons/loading.gif";
+    uploadNotification.appendChild(loading);
+    if (filename)
+        uploadNotification.appendChild(document.createTextNode(`Uploading ${filename}`));
+    uploadQueue.appendChild(uploadNotification);
+    return uploadNotification;
+}
+
+let uploadNotifications = {};
+function uploadEvent() {
+    let files = uploadButton.files;
+    
+    let filesData = [];
+    let value;
+    let uploadCount = 0;
+    for (let file of files) {
+        reader = new FileReader();
+        reader.onload = function (/*ProgressEvent*/event) {
+            value = event.target.result;
+            filesData.push({
+                name: file.name,
+                value: value
+            });
+
+            uploadNotifications[file.name] = notifyUpload(file.name);
+
+            uploadCount++;
+
+            if (uploadCount === uploadButton.files.length) {
+                sendUploadRequest(filesData);
+
+                // Reset upload buttons files
+                uploadButton.value = '';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Context Menu
+
+function getParentRow(/*HTMLElement*/element) {
+    // Recursively searches up until the parent row is found, or null is returned.
+    let parent = element.parentElement;
+    if (!parent)
+        return null;
+    else if (parent.className === "file-item")
+        return parent;
+    return getParentRow(parent);
+}
+
+function hideContextMenu() {
+    contextItem = null;
+    contextMenu.style.display = "none";
+    pasteButton.style = "";
+}
+
+function showContextMenu(/*PointerEvent*/event) {
+    contextMenu.style.display = "block";
+    contextMenu.style.left = event.pageX + "px";
+    contextMenu.style.top = event.pageY + "px";
+
+    navigator.clipboard.readText()
+    .then(text => {
+        let copiedItems = text.split(", ");
+        if (copiedItems.length > 0) {
+            pasteButton.style.display = "block";
+        }
+    });
+}
+
+let contextItem;
+function handleContextMenu(/*PointerEvent*/event) {
+    event.preventDefault();
+    hideContextMenu();
+    
+    if (!["H1", "TD"].includes(event.target.tagName) && event.target.className !== "cell-container")
+        return;
+    
+    contextItem = getParentRow(event.target);
+    if (contextItem == null)
+        return;
+    
+    showContextMenu(event);
+}
+
+function copyEvent() {
+    if (!contextItem)
+        return;
+
+    // If only one item is copied
+    if (selected.length <= 1) {
+        navigator.clipboard.writeText(contextItem.getAttribute("filename"));
+    
+    // When multiple files are copied
+    } else {
+        let filenames = [];
+        for (let item of selected)
+            filenames.push(item.name);
+        navigator.clipboard.writeText(filenames.join(", "));
+    }
+}
+
+function keyLinearSearch(/*json*/searchItem, /*array*/array, /*string*/key) {
+    // Searches for an item in an array based on a given key.
+    
+    for (let item of array) {
+        if (item[key] === searchItem[key])
+            return true;
+    }
+    return false;
+}
+
+function handleCopyDuplicates(/*array*/duplicateFiles, /*array*/allFiles) {
+    // Handling duplicate files
+    let buttons = createNotification(`<b>Files are conflicting with existing files, do you want to overwrite them?: </b><br> ${duplicateFiles.join("<br>")}`, options={
+        confirm: "Yes",
+        cancel: "No"
+    });
+    buttons.confirm.id = "confirm-button";
+    buttons.confirm.addEventListener("click", () => {
+        sendCopyRequest(allFiles, overwrite=true);
+        clearNotifications();
+    });
+    buttons.cancel.id = "cancel-button";
+    buttons.cancel.addEventListener("click", () => {
+        for (let name of allFiles) {
+            let notif = uploadNotifications[name];
+            if (notif) {
+                notif.innerHTML = `Copy of ${name} was cancelled.`
+                setTimeout(`removeUploadNotification('${name}');`, 1000 * UPLOAD_FADE_SECONDS)
+            }
+        }
+        clearNotifications();
+    });
+}
+
+function showCopiedItems(/*array*/copiedItems, /*array*/newNames) {
+    for (let i in copiedItems) {
+        let copiedItem = copiedItems[i];
+        let newName = newNames[i];
+
+        let original = getElementFromFileName(copiedItem);
+        if (original) {
+            let originalData = JSON.parse(original.getAttribute("data-content"));
+            originalData.name = newName;
+            allFiles.push(originalData);
+        } else {
+            // CBF
+            window.location = "/file_manager";
+        }
+
+        let uploadNotification = uploadNotifications[copiedItem];
+        uploadNotification.innerHTML = `Pasted ${copiedItem}`;
+
+        setTimeout(`removeUploadNotification('${copiedItem}');`, 1000 * UPLOAD_FADE_SECONDS);
+    }
+    displayFiles(sortFiles(allFiles, globalSortBy, globalSortDirection));
+}
+
+function onRetrievedCopy(/*array*/duplicateFiles, /*array*/copiedItems, /*array*/newNames, overwrite=false) {
+    console.log("orc")
+    if (duplicateFiles.length > 0) {
+        console.log("yup");
+        handleCopyDuplicates(duplicateFiles, copiedItems);
+    } else {
+        // If overwrite is true, loop through and prune all of the duplicate names
+        if (overwrite) {
+            let originalFiles = allFiles.filter(file => newNames.includes(file.name));
+            for (let file of originalFiles) {
+                allFiles.splice(allFiles.indexOf(file), 1);
+                getElementFromFileName(file.name).remove();
+            }
+        }
+        showCopiedItems(copiedItems, newNames);
+    }
+}
+
+function sendCopyRequest(/*array*/copiedItems, /*bool*/overwrite=false) {
+    let allFileNames = [];
+    for (let item of allFiles)
+        allFileNames.push(item.name);
+
+    let duplicateFiles = [];
+    let newNames = [];
+    
+    let itemCount = 0;
+    for (let copiedItem of copiedItems) {
+        fileData = {name: copiedItem};
+        if (overwrite)
+            fileData.overwrite = 1;
+        // If another file exists, create a copy of it.
+        if (!overwrite) {
+            let uploadNotification = notifyUpload("");
+            uploadNotification.appendChild(document.createTextNode(`Creating a copy of ${copiedItem}`));
+            uploadNotifications[copiedItem] = uploadNotification;
+        }
+        
+        fetch("/copyFile", {
+            method: "POST",
+            body: JSON.stringify(fileData),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Duplicate file
+            if (data.response === 300) {
+                duplicateFiles.push(data.name);
+            }
+            newNames.push(data.name);
+
+            itemCount++;
+
+            if (itemCount == copiedItems.length) {
+                onRetrievedCopy(duplicateFiles, copiedItems, newNames, overwrite);
+            }
+        })
+        .catch(error => console.log(error));
+        
+    }
+}
+
+function pasteEvent() {
+    navigator.clipboard.readText()
+    .then(text => {
+        copiedItems = text.split(", ");
+        sendCopyRequest(copiedItems);
+    })
+    .catch(error => console.log(error));
+}
+
+function deleteEvent() {
+
+}
+
+var contextMenu;
+var copyButton;
+var pasteButton;
+var deleteButton;
+
+window.addEventListener("load", () => {
+    contextMenu = document.getElementById("contextMenu");
+    document.oncontextmenu = handleContextMenu;
+    document.onclick = hideContextMenu;
+
+    copyButton = document.getElementById("context-copy");
+    pasteButton = document.getElementById("context-paste");
+    deleteButton = document.getElementById("context-delete");
+
+});

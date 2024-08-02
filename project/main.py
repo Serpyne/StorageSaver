@@ -200,6 +200,17 @@ devlog:
     are written as bytes into a zipped folder using the Python module 'zipfile'.
         * However, the date modified of the downloaded files are not retained.
     Also an upload notification shows up for every file that is uploaded now.
+
+    02/08 16:18 - Copying files added, problem was that you couldn't directly copy a File object. You
+    would have to save its information without the primary key, being the id. Then you can save
+    that as a File object and make changes to it.
+        - Now to do multiple file copying and deletion
+
+    I HATE JAVACSRIPT, WHY ARE FOR LOOPS USING "OF" INSTEAD OF "IN" THATS SO WEIRD
+    02/08 16:56 - Implemented overwrite protection when copying files. Now to do multiple file deletion.
+
+    02/08 18:25 - I did not start file deletion, i spent the last hour just fixing the copy code.
+    Oh well
 """
 
 from flask import Blueprint, render_template, url_for, request
