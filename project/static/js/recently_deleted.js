@@ -233,6 +233,17 @@ function deleteFiles() {
     buttons.cancel.onclick = clearNotifications;
 }
 
+function deleteEvent() {
+    if (!contextItem)
+        return;
+
+    if (selected.length === 0) {
+        let fileData = JSON.parse(contextItem.getAttribute("data-content"));
+        selected.push(fileData);
+    }
+    deleteFiles();
+}
+
 window.addEventListener("load", () => {
     body = document.getElementsByClassName("hero-body")[0]; 
     navbar = document.getElementsByClassName("navbar")[0];

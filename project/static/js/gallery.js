@@ -482,24 +482,25 @@ function closeViewer(/*PointerEvent*/event, /*bool*/force = false) {
     uploadContainer.style.display = "flex";
 }
 
-function onItemRightClick(/*PointerEvent*/event, /*HTMLElement*/item) {
-    /*
-    When an item is right clicked, prevent the normal browser right
-    click popup from displaying, then show the solution's popup which
-    has selection tools and other.
-    */
-    event.preventDefault();
+// DEPRECATED
+// function onItemRightClick(/*PointerEvent*/event, /*HTMLElement*/item) {
+//     /*
+//     When an item is right clicked, prevent the normal browser right
+//     click popup from displaying, then show the solution's popup which
+//     has selection tools and other.
+//     */
+//     event.preventDefault();
     
-    let menu = document.getElementById("contextMenu");
-    menu.style.display = "block";
-    menu.style.left = event.pageX + "px";
-    menu.style.top = event.pageY + "px";
-}
+//     let menu = document.getElementById("contextMenu");
+//     menu.style.display = "block";
+//     menu.style.left = event.pageX + "px";
+//     menu.style.top = event.pageY + "px";
+// }
 
-function hideContextMenu() {
-    let menu = document.getElementById("contextMenu");
-    menu.style.display = "none";
-}
+// function hideContextMenu() {
+//     let menu = document.getElementById("contextMenu");
+//     menu.style.display = "none";
+// }
 
 function createGalleryItem(/*string*/alt, /*string*/src) {
     /*
@@ -517,7 +518,7 @@ function createGalleryItem(/*string*/alt, /*string*/src) {
 
     itemOverlay.addEventListener("click", (event) => onItemClick(event, itemOverlay));
     // On right click
-    itemOverlay.addEventListener("contextmenu", (event) => onItemRightClick(event, itemOverlay));
+    // itemOverlay.addEventListener("contextmenu", (event) => onItemRightClick(event, itemOverlay));
 
     let selectButton = document.createElement("img");
     selectButton.className = "select-button";
@@ -710,6 +711,112 @@ function deleteImages() {
 
 }
 
+function hideContextMenu() {
+    contextItem = null;
+    contextMenu.style.display = "none";
+    // pasteButtonLabel.style.color = "#414141";
+}
+
+function showContextMenu(/*PointerEvent*/event) {
+    contextMenu.style.display = "block";
+    contextMenu.style.left = event.pageX + "px";
+    contextMenu.style.top = event.pageY + "px";
+
+    navigator.clipboard.readText()
+    .then(text => {
+        let copiedItems = text.split(", ");
+        if (copiedItems.length > 0) {
+            pasteButton.style.display = "block";
+        }
+    });
+}
+
+let contextItem;
+function handleContextMenu(/*PointerEvent*/event) {
+    /*
+    When an item is right clicked, prevent the normal browser right
+    click popup from displaying, then show the solution's popup which
+    has selection tools and other.
+    */
+    event.preventDefault();
+    hideContextMenu();
+
+    if (event.target.className !== "item-overlay") 
+        return;
+
+    contextItem = event.target;
+
+    showContextMenu(event);
+}
+
+function selectEvent() {
+    if (!contextItem)
+        return;
+
+    let data = JSON.parse(contextItem.getAttribute("data-content"));
+    selected.push(data);
+    checkSelected();
+}
+
+function copyEvent() {
+    if (selected.length == 0) {
+        if (!contextItem)
+            return;
+        let name = contextItem.getAttribute("data-content");
+        navigator.clipboard.writeText(name);
+    } else {
+        let filenames = [];
+        for (let image of selected)
+            filenames.push(image.name)
+        navigator.clipboard.writeText(filenames.join(', '));
+    }
+}
+
+function pasteEvent() {
+    navigator.clipboard.readText()
+    .then(text => {
+        let filenames = text.split(", ");
+        
+        let allFiles = galleryBox.getElementsByClassName("item-overlay");
+        let allFileNames = [];
+        for (let item of allFiles)
+            allFileNames.push(item.getAttribute("data-content"));
+
+        for (let name of filenames) {
+            
+            fetch("/copyFile", {
+                method: "POST",
+                body: JSON.stringify({name: name}),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (allFileNames.includes(name)) {
+                    let galleryItem = allFiles[allFileNames.indexOf(name)];
+                    let newItem = galleryItem.cloneNode(true);
+                    newItem.setAttribute("data-content", data.name);
+                    newItem.alt = data.name;
+                    galleryBox.appendChild(newItem);
+                }
+            })
+            .catch(error => console.log(error));
+        }
+    })
+    .catch(error => console.log(error));
+}
+
+var contextMenu;
+var copyButton;
+var pasteButton;
+var pasteButtonLabel;
+var deleteButton;
+
+var selectionPasteButton;
+
+var contextMenu;
+
 window.addEventListener("load", (event) => {
     /*
     Once the webpage has loaded:
@@ -725,7 +832,16 @@ window.addEventListener("load", (event) => {
     */
 
     // Context menu
+    contextMenu = document.getElementById("contextMenu");
+    document.oncontextmenu = handleContextMenu;
     document.onclick = hideContextMenu;
+
+    copyButton = document.getElementById("context-copy");
+    pasteButton = document.getElementById("context-paste");
+    pasteButtonLabel = pasteButton.firstElementChild;
+    deleteButton = document.getElementById("context-delete");
+
+    selectionPasteButton = document.getElementById("paste-button");
 
     selectionFrame = document.getElementById("selection-buttons");
     selectionButtons = document.getElementsByClassName("selection-button");

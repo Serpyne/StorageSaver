@@ -746,6 +746,16 @@ function uploadEvent() {
     }
 }
 
+function keyLinearSearch(/*json*/searchItem, /*array*/array, /*string*/key) {
+    // Searches for an item in an array based on a given key.
+    
+    for (let item of array) {
+        if (item[key] === searchItem[key])
+            return true;
+    }
+    return false;
+}
+
 // Context Menu
 
 function getParentRow(/*HTMLElement*/element) {
@@ -761,7 +771,7 @@ function getParentRow(/*HTMLElement*/element) {
 function hideContextMenu() {
     contextItem = null;
     contextMenu.style.display = "none";
-    pasteButton.style = "";
+    pasteButtonLabel.style.color = "#414141";
 }
 
 function showContextMenu(/*PointerEvent*/event) {
@@ -778,6 +788,36 @@ function showContextMenu(/*PointerEvent*/event) {
     });
 }
 
+function isFile(/*string*/text) {
+    let textSplit = text.split(".");
+    let ext = textSplit[textSplit.length - 1];
+
+    if (ext.length === 0 || ext.length > 4)
+        return false;
+    return true;
+}
+
+function checkCopied() {
+    navigator.clipboard.readText()
+    .then(text => {
+        let hasCopied = 0;
+        let names = text.split(", ")
+        for (let name of names) {
+            if (isFile(text)) {
+                if (getElementFromFileName(name))
+                    hasCopied++;
+            }
+        }
+        if (hasCopied == names.length) {
+            selectionPasteButton.style.display = "inline-block";
+            pasteButtonLabel.style.color = "#ffffff";
+        } else {
+            selectionPasteButton.style = "";
+        }
+    })
+    .catch(error => console.log(error));
+}
+
 let contextItem;
 function handleContextMenu(/*PointerEvent*/event) {
     event.preventDefault();
@@ -791,10 +831,12 @@ function handleContextMenu(/*PointerEvent*/event) {
         return;
     
     showContextMenu(event);
+    
+    checkCopied();
 }
 
 function copyEvent() {
-    if (!contextItem)
+    if (!contextItem && selected.length == 0)
         return;
 
     // If only one item is copied
@@ -808,16 +850,7 @@ function copyEvent() {
             filenames.push(item.name);
         navigator.clipboard.writeText(filenames.join(", "));
     }
-}
-
-function keyLinearSearch(/*json*/searchItem, /*array*/array, /*string*/key) {
-    // Searches for an item in an array based on a given key.
-    
-    for (let item of array) {
-        if (item[key] === searchItem[key])
-            return true;
-    }
-    return false;
+    checkCopied();
 }
 
 function handleCopyDuplicates(/*array*/duplicateFiles, /*array*/allFiles) {
@@ -935,19 +968,35 @@ function pasteEvent() {
     navigator.clipboard.readText()
     .then(text => {
         copiedItems = text.split(", ");
-        sendCopyRequest(copiedItems);
+        let hasCopied = 0;
+        for (let name of copiedItems) {
+            if (isFile(text)) {
+                if (getElementFromFileName(name))
+                    hasCopied++;
+            }
+        }
+        if (hasCopied == copiedItems.length)
+            sendCopyRequest(copiedItems);
     })
     .catch(error => console.log(error));
 }
 
-function deleteEvent() {
+function selectEvent() {
+    if (!contextItem)
+        return;
 
+    let data = JSON.parse(contextItem.getAttribute("data-content"));
+    selected.push(data);
+    checkSelected();
 }
 
 var contextMenu;
 var copyButton;
 var pasteButton;
+var pasteButtonLabel;
 var deleteButton;
+
+var selectionPasteButton;
 
 window.addEventListener("load", () => {
     contextMenu = document.getElementById("contextMenu");
@@ -956,6 +1005,8 @@ window.addEventListener("load", () => {
 
     copyButton = document.getElementById("context-copy");
     pasteButton = document.getElementById("context-paste");
+    pasteButtonLabel = pasteButton.firstElementChild;
     deleteButton = document.getElementById("context-delete");
 
+    selectionPasteButton = document.getElementById("paste-button");
 });

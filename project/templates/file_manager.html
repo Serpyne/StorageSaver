@@ -19,8 +19,16 @@
     <h1>Files Selected:</h1>
   </div>
 
+  <div title="Copy" id="copy-button" class="file-option-button" onclick="copyEvent()">
+    <img src="{{ url_for('static', filename='icons/copy.png')}}" alt="Copy" />
+  </div>
+
+  <div title="Paste" id="paste-button" class="file-option-button" onclick="pasteEvent()">
+    <img src="{{ url_for('static', filename='icons/paste.png')}}" alt="Paste" />
+  </div>
+
   <div title="Download" id="download-button" class="file-option-button" onclick="downloadFiles()">
-    <img src="{{ url_for('static', filename='icons/download.png')}}" alt="Download" />
+    <img src="{{ url_for('static', filename='icons/download.png')}}" style="display: inline-block;" alt="Download" />
     <h1 class="file-option-button-label">Download</h1>
   </div>
 

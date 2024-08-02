@@ -39,7 +39,11 @@
     align-items: center;
     margin: 0.5rem;
     max-width: 50rem;
-
+    
     transition: opacity 1.5s;
     -webkit-transition: opacity 1.5s;
+}
+
+#paste-button {
+    display: none;
 }

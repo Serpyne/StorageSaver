@@ -211,6 +211,13 @@ devlog:
 
     02/08 18:25 - I did not start file deletion, i spent the last hour just fixing the copy code.
     Oh well
+
+    02/08 19:44 - Fixed the copying and pasting a bit more and also added some of that functionality to the gallery.
+    I still need to add the multiselect to the gallery but should be not too hard.
+    Multiple file deleting works now on the file manager and recently deleted pages.
+        - Storage size calculation
+        - Gallery multi select
+        - Start all files
 """
 
 from flask import Blueprint, render_template, url_for, request

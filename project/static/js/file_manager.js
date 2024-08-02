@@ -7,6 +7,7 @@ function handleSelection(/*json*/file, /*PointerEvent*/event) {
     let row = getElementFromFileName(file.name);
     
     previewButton.style.display = "none";
+    checkCopied();
 
     // Normal mouse click
     if (!event.shiftKey && !event.ctrlKey) {
@@ -101,6 +102,17 @@ function handleSelection(/*json*/file, /*PointerEvent*/event) {
         return;
 
     checkSelected();
+}
+
+function deleteEvent() {
+    if (!contextItem)
+        return;
+
+    if (selected.length === 0) {
+        let fileData = JSON.parse(contextItem.getAttribute("data-content"));
+        selected.push(fileData);
+    }
+    archiveFiles();
 }
 
 var uploadButton;

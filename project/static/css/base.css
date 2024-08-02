@@ -33,6 +33,7 @@ html {
     box-sizing: border-box;
     cursor: pointer;
     display: inline-block;
+    background: #00d1b2;
 
     height: 5.6rem;
     line-height: 20px;

@@ -187,4 +187,8 @@ pre {
     justify-content: center;
     align-items: center;
     flex-direction: column;
+    position: fixed;
+    right: 0;
+    height: 100%;
+    top: 0;
 }
