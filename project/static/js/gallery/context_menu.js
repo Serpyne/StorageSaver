@@ -152,6 +152,7 @@ window.addEventListener("load", (event) => {
     pasteButton = document.getElementById("context-paste");
     pasteButtonLabel = pasteButton.firstElementChild;
     deleteButton = document.getElementById("context-delete");
+    deleteButton.firstElementChild.textContent = "Archive";
 
     selectionPasteButton = document.getElementById("paste-button");
 

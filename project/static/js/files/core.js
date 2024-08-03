@@ -8,7 +8,7 @@ This is because the selection systems are different so that they need their indi
 var oneClickPreview = false;
 var pixelated = false;
 
-// Constants for sorting, string literals are used when checking parameters parsed into 'sortFiles'
+// Constants for sorting, string literals are used when checking parameters parsed into 'quickSortFiles'
 const NAME = "name";
 const DATE_TAKEN = "date_taken";
 const DATE_UPLOADED = "date_uploaded";
@@ -41,64 +41,6 @@ let allFiles;
 let selected = [];
 let previous, current, previousIndex, currentIndex;
 // handleSelection differs between file manager and recently deleted
-
-/*
-Format:
-    {
-        "name":          "test.png",
-        "date_taken":    "04/05/2024 12:00:00",
-        "date_uploaded": "31/07/2024 12:00:00",
-        "type":          "PNG File",
-        "size":          12400
-        "src":           ...
-    },
-*/
-function sortFiles(/*array*/files, /*string*/sortBy, /*const*/sortDirection) {
-    // Takes in a list of files where each file is in the format {name<string>, date<string>, type<string>, size<int>, src<string>}
-    // Returns the sorted list in the same format.
-    
-    /*
-    Size is sorted using integer sorting.
-    If the type between two files is the same, then the filename is compared instead.   
-    */
-
-    let sorted; 
-    if (sortBy === SIZE) {
-        sorted = files.sort(function(a, b) {
-            if (a.size === b.size)
-                return a.name.localeCompare(b.name)
-            return a.size - b.size}
-        );
-    }
-
-    else if (sortBy === DATE_TAKEN) {
-        sorted = files.sort(function(a, b) {
-            if (a["date_taken"] === b["date_taken"])
-                return a.name.localeCompare(b.name)
-            return Date.parse(a["date_taken"]) - Date.parse(b["date_taken"])
-        });
-    }
-
-    else if (sortBy === DATE_UPLOADED) {
-        sorted = files.sort(function(a, b) {
-            if (a["date_uploaded"] === b["date_uploaded"])
-                return a.name.localeCompare(b.name)
-            return Date.parse(a["date_uploaded"]) - Date.parse(b["date_uploaded"])
-        });
-    }
-
-    else
-        sorted = files.sort(function (a, b) {
-            if (a[sortBy] === b[sortBy])
-                return a.name.localeCompare(b.name)
-            return a[sortBy].localeCompare(b[sortBy]);
-        });
-    
-    if (sortDirection === DESCENDING)
-        sorted.reverse();
-
-    return sorted;
-}
 
 function getElementFromFileName(/*string*/filename) {
     /*
@@ -288,6 +230,15 @@ function update(/*string*/type) {
     Handling the sorting and updating the file display after one of the sorting headers is clicked.
     */
     let index = "name date type size".split(" ").indexOf(type);
+
+    let dateLabel = sortDate.getElementsByTagName("h1")[0];
+    if (index == 1) {
+        if (dateLabel.innerHTML === "Date Taken")
+            type = DATE_TAKEN;
+        else
+            type = DATE_UPLOADED;
+    }
+
     let vis = sortArrows[index].style.visibility;
     let direction = ASCENDING;
     if (vis === "hidden" || !vis) {
@@ -296,13 +247,6 @@ function update(/*string*/type) {
         sortArrows[index].setAttribute("state", "ascending")
     } else {
         let state = sortArrows[index].getAttribute("state");
-        let dateLabel = sortDate.getElementsByTagName("h1")[0];
-        if (index == 1) {
-            if (dateLabel.innerHTML === "Date Taken")
-                type = DATE_TAKEN;
-            else
-                type = DATE_UPLOADED;
-        }
 
         if (state === "ascending") {
             sortArrows[index].setAttribute("state", "descending");
@@ -324,7 +268,7 @@ function update(/*string*/type) {
         }
     }
 
-    displayFiles(sortFiles(allFiles, type, direction));
+    displayFiles(quickSortFiles(allFiles, type, direction));
     globalSortBy = type;
     globalSortDirection = direction;
 }

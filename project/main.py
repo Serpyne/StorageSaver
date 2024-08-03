@@ -303,6 +303,10 @@ My Development Log:
     If need be, just implement the preliminary functions for the albums page and complete the testing table
     for maximum progress.
      
+    04/08 3:34 - Implemented quicksort into the file sorting.
+    Also added a reverse function
+    Should look into adding binary search
+    Also changed 'decoding' to 'preview' and fixed some other issues with uploading.
 """
 
 from flask import Blueprint, render_template, url_for, request, jsonify

@@ -183,7 +183,7 @@ function sendRenameRequest(/*string*/originalName, /*string*/newName) {
         let storedFile = allFiles.filter(file => {return file.name == originalName})[0];
         storedFile.name = newName;
 
-        displayFiles(sortFiles(allFiles, globalSortBy, globalSortDirection));
+        displayFiles(quickSortFiles(allFiles, globalSortBy, globalSortDirection));
     })
     .catch(error => console.log(error));
 }
@@ -330,7 +330,7 @@ function showCopiedItems(/*array*/copiedItems, /*array*/newNames) {
 
         setTimeout(`removeUploadNotification('${copiedItem}');`, 1000 * UPLOAD_FADE_SECONDS);
     }
-    displayFiles(sortFiles(allFiles, globalSortBy, globalSortDirection));
+    displayFiles(quickSortFiles(allFiles, globalSortBy, globalSortDirection));
 }
 
 function onRetrievedCopy(/*array*/duplicateFiles, /*array*/copiedItems, /*array*/newNames, overwrite=false) {
@@ -462,7 +462,9 @@ window.addEventListener("load", () => {
 
     selectionPasteButton = document.getElementById("paste-button");
 
+    // If route is not in recently deleted?
     if (!window.location.href.includes("recently_deleted"))
+        deleteButton.firstElementChild.textContent = "Archive";
         return;
 
     copyButton.remove();

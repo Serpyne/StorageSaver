@@ -109,7 +109,7 @@ function sendUploadRequest(/*array*/files, /*bool*/overwrite = false) {
                 }
                 allFiles.push(data.file);
 
-                displayFiles(sortFiles(allFiles, globalSortBy, globalSortDirection));
+                displayFiles(quickSortFiles(allFiles, globalSortBy, globalSortDirection));
 
                 uploadNotification.innerHTML = `Uploaded ${file.name}`;
 

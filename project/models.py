@@ -226,7 +226,7 @@ class File(db.Model):
         try:
             data = self.value.decode('utf-8')
         except UnicodeDecodeError:
-            return "File format is not supported for decoding."
+            return "File format is not supported for preview."
 
         return data
 
