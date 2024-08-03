@@ -1,5 +1,5 @@
 
-// DEPRECATED
+// DEPRECATED PREVIEW FILE SUBROUTINE
 // function deprecatedPreviewFile() {
 //     /*
 //     Shows the file preview.
@@ -157,7 +157,7 @@ function handleSelection(/*json*/file, /*PointerEvent*/event) {
 }
 
 function sendRestoreRequest(/*array*/images) {
-    // Sends a restore image request to the backend, and deletes the images on the site.
+    // Sends a restore image request to the backend at /restoreFiles, and deletes the images on the site.
 
     for (let item of images)
         getElementFromFileName(item).remove();
@@ -171,12 +171,15 @@ function sendRestoreRequest(/*array*/images) {
         })
         .then(response => response.json())
         .then(data => {
-            console.log(data);
         })
         .catch(error => console.log(error))
 }
 
 function restoreFiles() {
+    /*
+    Called by the restore button on the selection frame.
+    Calls sendRestoreRequest once the user confirms restoration.
+    */
     let images = [];
     for (let item of selected)
         images.push(item.name);
@@ -199,7 +202,10 @@ function restoreFiles() {
 }
 
 function sendDeleteRequest(/*array*/images) {
-    // Sends a delete image request to the backend, and deletes the images on the site.
+    /*
+    Sends a delete image request to the backend, and deletes the images on the site.
+    Permanently deletes the files from the database.
+    */
     for (let item of images)
         getElementFromFileName(item).remove();
 
@@ -212,12 +218,15 @@ function sendDeleteRequest(/*array*/images) {
         })
         .then(response => response.json())
         .then(data => {
-            console.log(data);
         })
         .catch(error => console.log(error))
 }
 
 function deleteFiles() {
+    /*
+    Prompts the user for permanent file deletion.
+    If the user confirms, then a deletion request is sent with 'sendDeleteRequest'
+    */
     let images = [];
     for (let item of selected)
         images.push(item.name);
@@ -240,6 +249,9 @@ function deleteFiles() {
 }
 
 function deleteEvent() {
+    /*
+    Called by the big red delete button.
+    */
     if (!contextItem)
         return;
 
@@ -249,39 +261,3 @@ function deleteEvent() {
     }
     deleteFiles();
 }
-
-window.addEventListener("load", () => {
-    body = document.getElementsByClassName("hero-body")[0]; 
-    navbar = document.getElementsByClassName("navbar")[0];
-    
-    fileOptions = document.getElementById("file-options");
-    previewButton = document.getElementById("preview-button");
-    closePreviewButton = document.getElementById("close-preview");
-    navbar.appendChild(fileOptions);
-    navbar.appendChild(previewButton);
-
-    previewFrame = document.getElementById("preview");
-    previewContainer = document.getElementById("preview-container");
-    body.appendChild(previewContainer);
-
-    fileManager = document.getElementById("file-manager");
-    fileManagerBody = fileManager.getElementsByTagName("tbody")[0];
-    fileCount = document.getElementById("file-count");
-
-    sortName = document.getElementById("sort-name");
-    sortDate = document.getElementById("sort-date");
-    sortType = document.getElementById("sort-type");
-    sortSize = document.getElementById("sort-size");
-
-    arrow = document.createElement("img");
-    arrow.className = "sort-arrow";
-    arrow.src = upArrowImg;
-    sortName.firstElementChild.append(arrow.cloneNode());
-    sortDate.firstElementChild.append(arrow.cloneNode());
-    sortType.firstElementChild.append(arrow.cloneNode());
-    sortSize.firstElementChild.append(arrow.cloneNode());
-
-    sortArrows = document.getElementsByClassName("sort-arrow");
-    
-    update(NAME);
-});

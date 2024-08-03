@@ -1,7 +1,7 @@
 """
 Provides web routes for the root, profile and gallery pages. 
 
-devlog:
+My Development Log:
     13/07 17:00 - Initalised the full file structure for a flask
     web server. Virtual environment is added which allows
     environmental variables to be set. Some pages initialised (base,
@@ -275,11 +275,34 @@ devlog:
         - Colour coding
         - Have to be able to name albums
         - Dates for each of the albums
-        - Profile picture !!!!!!!!!!!!!
+        - Profile picture 
 
-    = Pixelated images because viewwers on windows just blur it??
+    = Pixelated images because viewwers on windows just blur it?
     = Viewing code files was always hard with the tyypical things
     = Images, documents, and zipped folders were always jumbled up together
+
+    04/08 1:06 - Reorganised most of the JavaScript code for the gallery, file manager, all files, and
+    recently deleted pages into the corresponding named files and directories such that the main files
+    are not congested with the relative but grouped functions.
+    By separating the functions into their respective files, it helps the developer make informed decisions
+    about where a subroutine is and spends less time searching for it.
+    Might scrap the albums thing if it takes too long
+    But I have a couple hours to do it tomorrow!
+    Overview
+        - Reorganised web logic to more readable directories.
+        - Changed deletion to archiving for the relevant pages as it makes more sense
+        - Added lots of internal documentation to most of the files
+            -> Header comments within subroutines
+            -> Comments describing declaration of elements and data stores on load.
+        - Removed the copy, paste, and rename buttons from recently deleted as
+            the function of that page serves to be a read-only 'graveyard' for files.
+        - Previous patch forgot to mention that I added image zoom speed because
+            on trackpad the viewer zooming is very slow.
+    Looking to do the albums page tomorrow (image processing, colour coding), may be a slow process
+    Should also complete the testing table as soon as I can.
+    If need be, just implement the preliminary functions for the albums page and complete the testing table
+    for maximum progress.
+     
 """
 
 from flask import Blueprint, render_template, url_for, request, jsonify
@@ -317,17 +340,8 @@ def all_files():
 @main.route('/gallery', methods=["GET"])
 @login_required
 def gallery():
-    # Gallery page
-
-    # Viewing single files
-    parameters = request.args
-    if "id" in parameters:
-        img = File.query.get(int(parameters["id"]))
-        return render_template('viewer.html', data=img)
-
     images = FileLoader()
     image_json = images.load(archived=None)
-    # print([f"{key}: {value[:16]}..." for key, value in image_json.items()])
 
     user_settings = current_user.get_all_settings()
     return render_template('gallery.html', images=image_json, user_settings=user_settings)

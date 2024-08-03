@@ -126,42 +126,8 @@ var uploadButton;
 var uploadQueue;
 
 window.addEventListener("load", () => {
-    body = document.getElementsByClassName("hero-body")[0]; 
-    navbar = document.getElementsByClassName("navbar")[0];
-    
-    fileOptions = document.getElementById("file-options");
-    previewButton = document.getElementById("preview-button");
-    closePreviewButton = document.getElementById("close-preview");
-    navbar.appendChild(fileOptions);
-    navbar.appendChild(previewButton);
-
     uploadQueue = document.getElementById("upload-queue");
-
-    previewFrame = document.getElementById("preview");
-    previewContainer = document.getElementById("preview-container");
-    body.appendChild(previewContainer);
-
-    fileManager = document.getElementById("file-manager");
-    fileManagerBody = fileManager.getElementsByTagName("tbody")[0];
-    fileCount = document.getElementById("file-count");
-
-    sortName = document.getElementById("sort-name");
-    sortDate = document.getElementById("sort-date");
-    sortType = document.getElementById("sort-type");
-    sortSize = document.getElementById("sort-size");
-
-    arrow = document.createElement("img");
-    arrow.className = "sort-arrow";
-    arrow.src = upArrowImg;
-    sortName.firstElementChild.append(arrow.cloneNode());
-    sortDate.firstElementChild.append(arrow.cloneNode());
-    sortType.firstElementChild.append(arrow.cloneNode());
-    sortSize.firstElementChild.append(arrow.cloneNode());
-
-    sortArrows = document.getElementsByClassName("sort-arrow");
-    
+        
     uploadButton = document.getElementById("upload-button");
     uploadButton.addEventListener("change", () => uploadEvent());
-
-    update(NAME);
 });
