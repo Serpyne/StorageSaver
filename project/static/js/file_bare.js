@@ -3,6 +3,7 @@ let allFiles;
 // User settings
 
 var oneClickPreview = false;
+var pixelated = false;
 
 // Declare sorting constants
 const NAME = "name";
@@ -111,6 +112,10 @@ function previewFile() {
     */
     let file, nameSplit, extension;
 
+    // If rename entries are shown then don't preview
+    if (document.getElementsByClassName("rename-input").length > 0)
+        return;
+
     file = selected[0];
     nameSplit = file.name.split(".");
     extension = nameSplit[nameSplit.length - 1].toUpperCase();
@@ -123,7 +128,11 @@ function previewFile() {
         let image = document.createElement("img");
         image.src = file.src;
         previewFrame.appendChild(image);
+        image.className = "preview-image";
 
+        if (pixelated)
+            image.style.setProperty("image-rendering", "pixelated");
+        
         // Get original resolution image
         fetch("/getImage", {
                 method: "POST",
@@ -200,6 +209,11 @@ function previewFile() {
             } else if (file.type === "gif" || file.type === "image") {
                 let img = document.createElement("img");
                 img.src = file.value;
+
+                if (pixelated)
+                    img.style.setProperty("image-rendering", "pixelated");
+
+                img.className = "preview-image";
                 previewFrame.appendChild(img);
             }
 
@@ -468,7 +482,7 @@ function archiveFiles() {
     for (let item of selected)
         images.push(item.name);
 
-    let buttons = createNotification(`<i>They can be restored from Recently Deleted.</i><br><b>Are you sure you want to delete these images?</b><br> ${images.join("<br>")}`,
+    let buttons = createNotification(`<i>They can be restored from Recently Deleted.</i><br><b>Are you sure you want to archive these images?</b><br> ${images.join("<br>")}`,
         {
             confirm: 'Confirm',
             cancel: 'Cancel' 
@@ -587,7 +601,7 @@ function handleDuplicates(/*array*/duplicateFiles, /*array*/allFiles) {
 function handleUploadResponses(duplicateFiles, imageFiles, files) {
     // Callback function handling responses involving duplicate files and if the files contain images.
     // Can only be called after all of the fetches have been called.
-    if (imageFiles.length > 0) {
+    if (imageFiles.length > 0 && window.location.href.includes("file_manager")) {
         let text;
         let imageFilenames = [];
         for (file of imageFiles)
@@ -636,6 +650,8 @@ function sendUploadRequest(/*array*/files, /*bool*/overwrite = false) {
         // Overwrite option
         if (overwrite) 
             file.overwrite = 1;
+        if (!window.location.href.includes("file_manager"))
+            file.allowImages = 1;
 
         let uploadNotification = uploadNotifications[file.name];
 
@@ -801,6 +817,21 @@ function checkCopied() {
     .catch(error => console.log(error));
 }
 
+function clearRenameEntries() {
+    // If multiple rename events are started, it will clear the previous ones.
+    for (let error of document.getElementsByClassName("rename-error"))
+        error.remove();
+    let renameEntries = document.getElementsByClassName("rename-input");
+    for (let item of renameEntries) {
+        let label = document.createElement("h1");
+        let container = item.parentElement;
+        label.className = "name-label";
+        label.textContent = container.parentElement.title;
+        container.appendChild(label);
+        item.remove();
+    }
+}
+
 let contextItem;
 function handleContextMenu(/*PointerEvent*/event) {
     event.preventDefault();
@@ -813,9 +844,143 @@ function handleContextMenu(/*PointerEvent*/event) {
     if (contextItem == null)
         return;
     
+    // If multiple rename events are started, it will clear the previous ones.
+    clearRenameEntries();
+
     showContextMenu(event);
     
     checkCopied();
+}
+
+function isValidFileName(/*string*/filename) {
+    /*
+    File name requirements:
+        - length is at least 4
+        - Contains at least one full stop
+        - Length of the extension is less than 5
+        - Extension is known
+    */
+    if (filename.length < 4)
+        return false;
+
+    let nameSplit = filename.split(".");
+
+    if (nameSplit.length < 2)
+        return false;
+
+    let ext = nameSplit[nameSplit.length - 1];
+
+    if (ext.length > 4)
+        return false;
+
+    if (!EXTENSIONS.includes(ext.toUpperCase()))
+        return false;
+
+    return true;
+}
+
+var EXTENSIONS;
+function getValidExtensions() {
+    fetch("/getExtensions", {
+        method: "POST",
+        headers: {
+            "Content-type": "application/json; charset=UTF-8"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        EXTENSIONS = data.extensions;
+        return data.extensions;
+    })
+    .catch(error => console.log(error));
+}
+
+function sendRenameRequest(/*string*/originalName, /*string*/newName) {
+    fetch("/renameFile", {
+        method: "POST",
+        body: JSON.stringify({originalName: originalName, newName: newName}),
+        headers: {
+            "Content-type": "application/json; charset=UTF-8"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.response === 300) {
+            let buttons = createNotification(`${originalName} was not renamed. Check the file name?`, options={
+                confirm: "Okay"
+            });
+            buttons.confirm.id = "confirm-button";
+            buttons.confirm.onclick = clearNotifications;
+            return;
+        }
+
+        let storedFile = allFiles.filter(file => {return file.name == originalName})[0];
+        storedFile.name = newName;
+
+        displayFiles(sortFiles(allFiles, globalSortBy, globalSortDirection));
+    })
+    .catch(error => console.log(error));
+}
+
+function renameEvent() {
+    if (!contextItem)
+        return;
+
+    closePreview();
+
+    let filename = contextItem.getAttribute("filename");
+
+    let nameCell = contextItem.getElementsByClassName("name")[0];
+    let container = nameCell.firstElementChild;
+    let nameLabel = container.lastElementChild;
+    nameLabel.remove();
+
+    let entry = document.createElement("input");
+    entry.className = "rename-input";
+    entry.type = "text";
+
+    entry.value = filename;
+    
+    let error = document.createElement("h1");
+    error.textContent = "";
+    error.style.color = "red";
+    error.className = "rename-error";
+    error.style.setProperty("padding-left", "1rem");
+    
+    container.appendChild(entry);
+    container.appendChild(error);
+
+    entry.focus()
+
+    entry.addEventListener("keyup", (event) => {
+        if (event.key !== 'Enter' && event.keyCode !== 13)
+            return;
+
+        if (event.shiftKey || event.ctrlKey)
+            return;
+
+        // Verify new filename
+        if (!isValidFileName(entry.value)) {
+            error.textContent = "Invalid filename.";
+            error.title = `Valid extensions include: .${EXTENSIONS.join(", .")}`
+            return;
+        }
+
+        let nameSplit = filename.split(".");
+        let nameExt = nameSplit[nameSplit.length - 1];
+
+        let valueSplit = entry.value.split(".");
+        let valueExt = valueSplit[valueSplit.length - 1];
+
+        if (nameExt.toLowerCase() !== valueExt.toLowerCase()) {
+            error.textContent = "Extension does not match original extension.";
+            error.title = `Original extensions: ${nameExt}`
+            return;
+        }
+
+        sendRenameRequest(filename, entry.value);
+    });
+    entry.addEventListener("focusout", clearRenameEntries);
 }
 
 function copyEvent() {
@@ -872,7 +1037,7 @@ function showCopiedItems(/*array*/copiedItems, /*array*/newNames) {
             allFiles.push(originalData);
         } else {
             // CBF
-            window.location = "/file_manager";
+            window.location.reload();
         }
 
         let uploadNotification = uploadNotifications[copiedItem];
@@ -972,8 +1137,8 @@ function selectEvent() {
 }
 
 function loadSettings(/*json*/settings) {
-    if (settings.oneClickPreview)
-        oneClickPreview = settings.oneClickPreview;
+    oneClickPreview = settings["oneClickPreview-switch"];
+    pixelated = settings["imageQuality-switch"];
 }
 
 var contextMenu;
@@ -985,6 +1150,8 @@ var deleteButton;
 var selectionPasteButton;
 
 window.addEventListener("load", () => {
+    getValidExtensions();
+
     contextMenu = document.getElementById("contextMenu");
     document.oncontextmenu = handleContextMenu;
     document.onclick = hideContextMenu;

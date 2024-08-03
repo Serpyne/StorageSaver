@@ -40,19 +40,33 @@ function showPasswordPrompt(/*bool*/hide_notification = false) {
     }
 }
 
-function toggleSetting(/*string*/setting, /*HTMLElement*/switchElement) {
-    options = SETTINGS[setting];
+function changeSetting(/*string*/setting, /*HTMLElement*/element) {
+    let options = SETTINGS[setting];
     if (!options)
         return;
 
-    let state = switchElement.checked;
-    
-    let label = switchElement.parentElement.parentElement.getElementsByTagName("H1")[0]
-    if (state)
-        label.textContent = options[1];
-    else
-        label.textContent = options[0];
+    let label;
+    let state;
+    if (setting.includes("switch")) {
+       label = element.parentElement.parentElement.getElementsByTagName("H1")[0]
+        state = element.checked;
+        
+        if (state)
+            label.textContent = options[1];
+        else
+            label.textContent = options[0];
+    }
 
+    else if (setting.includes("slider")) {
+        label = element.parentElement.getElementsByTagName("H1")[0]
+        state = element.value;
+        
+        label.textContent = options[state];
+    }
+
+    if (state == null)
+        return;
+    
     fetch("/changeSetting", {
         method: "POST",
         body: JSON.stringify({setting: setting, value: state}),
@@ -66,6 +80,50 @@ function toggleSetting(/*string*/setting, /*HTMLElement*/switchElement) {
     .catch(error => console.log(error))
 }
 
+function createSwitch(setting, value, options) {
+    let settingFrame = document.createElement("div");
+    let switchLabel = document.createElement("label");
+    let switchElement = document.createElement("input");
+    let slider = document.createElement("span");
+    let settingLabel = document.createElement("h1");
+
+    settingFrame.className = "setting";
+    switchLabel.className = "switch";
+    switchElement.type = "checkbox";
+    switchElement.addEventListener("click", (event) => changeSetting(setting, event.target));
+    slider.className = "slider";
+
+    switchLabel.appendChild(switchElement);
+    switchLabel.appendChild(slider);
+    settingFrame.appendChild(switchLabel);
+    settingFrame.appendChild(settingLabel);
+
+    settingsContainer.appendChild(settingFrame);
+
+    if (value) {
+        switchElement.checked = true;
+        settingLabel.textContent = options[1];
+    } else
+        settingLabel.textContent = options[0];
+}
+
+function createSlider(/*int*/min, /*int*/max, /*int*/value) {
+    let settingFrame = document.createElement("div");
+    let settingLabel = document.createElement("h1");
+    
+    let slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = min;
+    slider.max = max;
+    slider.value = value;
+
+    settingFrame.appendChild(slider);
+    settingFrame.appendChild(settingLabel);
+    settingsContainer.appendChild(settingFrame);
+    
+    return slider, settingLabel;
+}
+
 var SETTINGS;
 var settingsContainer;
 function loadSettings(/*json*/settings, /*json*/userSettings) {
@@ -73,33 +131,38 @@ function loadSettings(/*json*/settings, /*json*/userSettings) {
     SETTINGS = settings;
 
     for (let setting of Object.keys(settings)) {
-        options = settings[setting];
+        let settingType = setting.split("-");
+        settingType = settingType[settingType.length - 1];
+        let options = SETTINGS[setting];
 
-        let settingFrame = document.createElement("div");
-        let switchLabel = document.createElement("label");
-        let checkbox = document.createElement("input");
-        let slider = document.createElement("span");
-        let settingLabel = document.createElement("h1");
+        if (settingType === "switch") {
+            createSwitch(setting, userSettings[setting], options);
 
-        settingFrame.className = "setting";
-        switchLabel.className = "switch";
-        checkbox.type = "checkbox";
-        checkbox.addEventListener("click", (event) => toggleSetting(setting, event.target));
-        slider.className = "slider";
+        } else if (settingType === "slider") {
+            let settingFrame = document.createElement("div");
+            let settingLabel = document.createElement("h1");
+            settingFrame.className = "setting";
+            
+            let sliderElement = document.createElement("input");
+            sliderElement.type = "range";
+            sliderElement.className = "range-slider";
+            sliderElement.min = 0;
+            sliderElement.max = options.length - 1;
+            sliderElement.value = userSettings[setting];
+            
+            settingFrame.appendChild(sliderElement);
+            settingFrame.appendChild(settingLabel);
+            settingsContainer.appendChild(settingFrame);
 
-        value = userSettings[setting];
-        if (value) {
-            checkbox.checked = true;
-            settingLabel.textContent = options[1];
-        } else
-            settingLabel.textContent = options[0];
+            settingLabel.textContent = options[sliderElement.value];
 
-        switchLabel.appendChild(checkbox);
-        switchLabel.appendChild(slider);
-        settingFrame.appendChild(switchLabel);
-        settingFrame.appendChild(settingLabel);
-
-        settingsContainer.appendChild(settingFrame);
+            sliderElement.addEventListener("input", () => {
+                settingLabel.textContent = options[sliderElement.value];
+            });
+            sliderElement.addEventListener("change", () => {
+                changeSetting(setting, sliderElement);
+            });
+        }
     }
 }
 
@@ -150,6 +213,7 @@ var maxStorage = Math.pow(10, 10);
 var progressLabel;
 var progressMax;
 window.addEventListener("load", () => {
+
     progressLabel = document.getElementById("progress-label");
     progressMax = document.getElementById("progress-max");
     

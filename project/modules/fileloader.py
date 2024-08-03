@@ -9,7 +9,7 @@ from threading import Thread
 IMAGES = "images"
 FILES = "files"
 
-IMAGE_EXTENSIONS = [".JPEG", ".JPG", ".PNG"]
+IMAGE_EXTENSIONS = [".JPEG", ".JPG", ".PNG", ".GIF"]
 
 def timer(func):
     """

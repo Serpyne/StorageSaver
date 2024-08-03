@@ -193,7 +193,7 @@ def change_setting():
 
     if ("setting" not in data or "value" not in data):
         return jsonify({"response": 304})
-
+    
     setting = data["setting"]
     value = data["value"]
 

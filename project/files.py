@@ -31,6 +31,8 @@ def upload_file():
 
     overwrite = bool("overwrite" in data)
 
+    allow_images = bool("allowImages" in data)
+
     same_file = File.query.filter_by(name=name, user=user).first()
     if same_file:
         if not overwrite:
@@ -46,7 +48,7 @@ def upload_file():
     new_file.set_property("date_uploaded", datetime.now().strftime(DATE_FORMAT))
     
     # If file is an image file, reject it.
-    if new_file.extension in [".JPEG", ".JPG", ".PNG"]:
+    if new_file.extension in [".JPEG", ".JPG", ".PNG"] and not allow_images:
         return jsonify({"response": 300})
 
     db.session.add(new_file)
@@ -220,3 +222,34 @@ def get_file_storage():
     size = sum([file.size for file in files])
 
     return jsonify({"response": 200, "size": size})
+
+@files.route('/getExtensions', methods=['POST'])
+@login_required
+def get_valid_extensions():
+    with open(join(dirname(__file__), "modules/types.json")) as f:
+        data = json.load(f)
+        extensions = list(data.keys())
+        extensions.remove("other")
+        f.close()
+    return jsonify({"extensions": extensions})
+
+
+@files.route('/renameFile', methods=['POST'])
+@login_required
+def rename_file():
+    data = json.loads(request.data)
+
+    original_name = data["originalName"]
+    new_name = data["newName"]
+
+    user = current_user.username
+
+    file = File.query.filter_by(name=original_name, user=user).first()
+    if not file:
+        return jsonify({"response": 300})
+    
+    file.name = new_name
+
+    db.session.commit()
+
+    return jsonify({"response": 200})

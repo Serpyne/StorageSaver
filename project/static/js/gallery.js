@@ -1,4 +1,8 @@
 
+// Define user settings
+
+var imageZoomSpeed;
+
 // Declare HTML elements on load
 
 var body;
@@ -317,7 +321,7 @@ function onItemClick(/*PointerEvent*/event, /*HTMLElement*/item) {
             viewerFileName = fileName;
 
             let len = viewerFileName.length;
-            if (viewerFileName.slice(len - 3, len) === "gif")
+            if (viewerFileName.slice(len - 3, len).toLowerCase() === "gif")
                 viewerResult.style.backgroundImage = `url('${data.base64}')`;
 
             metadata = data.metadata;
@@ -389,6 +393,7 @@ function imageZoom() {
     viewerImage.addEventListener("wheel", changeSize);
     lens.addEventListener("wheel", changeSize);
 
+    let speed;
     function changeSize(/*PointerEvent*/event) {
         if (viewer.style.display !== "flex")
             return;
@@ -396,7 +401,13 @@ function imageZoom() {
         // Smooth logarithmic zoom
         let zoom, logZoom;
         zoom = parseFloat(lens.getAttribute("zoom"));
-        logZoom = Math.log(zoom) + event.deltaY * 0.0005 // Increments of +-0.05
+
+        // Zoom speed is dependent on user settings [imageZoomSpeed: 0, 1, 2]
+        speed = 5 + 25 * imageZoomSpeed;
+
+        deltaZoom = event.deltaY * speed * 0.0001;
+
+        logZoom = Math.log(zoom) + deltaZoom // Increments of +-0.05
         logZoom = Math.max(-2, Math.min(1.4, logZoom));
         
         zoom = Math.exp(logZoom);
@@ -404,7 +415,7 @@ function imageZoom() {
         
         // If zoomed in enough, make the result the original quality.
         let len = viewerFileName.length;
-        if (viewerFileName.slice(len - 3, len) !== "gif") {
+        if (viewerFileName.slice(len - 3, len).toLowerCase() !== "gif") {
             if (logZoom < -0.6)
                 viewerResult.style.backgroundImage = `url('${viewerImage.src}')`;
             else
@@ -666,7 +677,7 @@ function uploadEvent() {
     let uploadButton = document.getElementById("upload-button");
     let url = uploadButton.value;
     let ext = url.substring(url.lastIndexOf('.') + 1).toLowerCase();
-    if (uploadButton.files && uploadButton.files[0] && (ext == "png" || ext == "jpeg" || ext == "jpg")) {
+    if (uploadButton.files && uploadButton.files[0] && (ext == "png" || ext == "jpeg" || ext == "jpg" || ext == "gif")) {
         let images = [];
 
         let uploadCount = 0;
@@ -693,6 +704,12 @@ function uploadEvent() {
             };
             reader.readAsDataURL(file);
         }
+    } else {
+        let buttons = createNotification("Please only upload .PNG, .JPEG, or .GIF files to the gallery.", options={
+            confirm: "Okay"
+        });
+        buttons.confirm.id = "confirm-button";
+        buttons.confirm.onclick = clearNotifications;
     }
 }
 
@@ -702,7 +719,7 @@ function deleteImages() {
         removedItems.push(item.name);
     }
 
-    buttons = createNotification(`<b>Are you sure you want to delete these images?</b><br> ${removedItems.join("<br>")}`, {
+    buttons = createNotification(`<b>Are you sure you want to archive these images?</b><br> ${removedItems.join("<br>")}`, {
         "confirm": "Yes",
         "cancel": "No"
     });
@@ -788,6 +805,13 @@ function selectEvent() {
     checkSelected();
 }
 
+function renameEvent() {
+    if (!contextItem)
+        return;
+
+    navigator.clipboard.writeText(contextItem.getAttribute("data-content"))
+}
+
 function copyEvent() {
     if (selected.length == 0) {
         if (!contextItem)
@@ -835,6 +859,10 @@ function pasteEvent() {
         }
     })
     .catch(error => console.log(error));
+}
+
+function loadSettings(/*json*/settings) {
+    imageZoomSpeed = settings["imageZoom-slider"];
 }
 
 var contextMenu;

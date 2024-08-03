@@ -20,6 +20,10 @@
     <h1>Files Selected:</h1>
   </div>
 
+  <div title="Rename" id="rename-button" class="file-option-button" onclick="renameEvent()">
+    <img src="{{ url_for('static', filename='icons/rename.png')}}" alt="Rename" />
+  </div>
+
   <div title="Copy" id="copy-button" class="file-option-button" onclick="copyEvent()">
     <img src="{{ url_for('static', filename='icons/copy.png')}}" alt="Copy" />
   </div>
@@ -43,7 +47,7 @@
   </div>
 
   <div title="Delete" id="delete-button" class="file-option-button" onclick="archiveFiles()">
-    <img src="{{ url_for('static', filename='icons/deleteButton.png')}}" alt="Delete" />
+    <img src="{{ url_for('static', filename='icons/archive.png')}}" alt="Delete" />
   </div>
 </div>
 

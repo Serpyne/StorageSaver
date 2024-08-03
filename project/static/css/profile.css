@@ -231,3 +231,34 @@ input:checked + .slider:before {
   right: 50px;
   bottom: 80px;
 }
+
+.range-slider {
+  -webkit-appearance: none;
+  width: 6rem;
+  border-radius: 1.35rem;
+  background: #ddd;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+  margin: 1rem;
+  height: 2.7rem;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%; 
+  background: #1c7063;
+  cursor: pointer;
+}
+
+.range-slider::-moz-range-thumb {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: #1c7063;
+  cursor: pointer;
+}

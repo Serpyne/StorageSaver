@@ -15,7 +15,7 @@ td {
     text-overflow: ellipsis;
     width: 25%;
     white-space: nowrap;
-    max-width: 50rem;
+    max-width: 35rem;
 }
 
 .header-option div {
@@ -179,6 +179,7 @@ pre {
     max-height: 50rem;
     min-height: 40rem;
     border-radius: 0.5rem;
+    border-style: inset;
 }
 
 .close-button {

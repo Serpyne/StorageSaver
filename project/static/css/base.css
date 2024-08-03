@@ -197,3 +197,46 @@ html {
 .context-menu ul li:hover {
   background: rgb(57, 91, 79);
 }
+
+
+#scroll-top-container {
+  display: flex;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  margin: 5rem;
+  justify-content: center;
+  align-items: center;
+}
+#scroll-to-top {
+  border-radius: 2.5rem;
+  background: rgb(42, 172, 159);
+  visibility: hidden;
+  opacity: 0;
+  padding: 0.5rem;
+  width: 5rem;
+  height: 5rem;
+
+  transition: all 200ms;
+  -webkit-transition: all 200ms;
+}
+#scroll-to-top:hover {
+  background: rgb(37, 140, 130);
+}
+
+.hero-footer {
+  display: flex;
+  justify-content: center;
+}
+.hero-footer * {
+  padding: 1rem;
+}
+
+#sidebar-menu img {
+  height: 2.5rem;
+  padding-right: 1rem;
+}
+#sidebar-menu a {
+  display: flex;
+  align-items: center;
+}

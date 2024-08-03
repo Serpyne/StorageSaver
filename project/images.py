@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify, Response
 from flask_login import login_required, current_user
 
 from .models import User, File
-from .models import JPG_START, PNG_START, DATE_FORMAT
+from .models import JPG_START, PNG_START, DATE_FORMAT, GIF_START
 from . import db
 from .modules.functions import log
 
@@ -47,13 +47,16 @@ def upload_image():
 
         if not extension:
             log("Wrong file format.")
-            return Response("Filename must be .PNG, .JPG or .JPEG", status=201, mimetype='application/json')
+            return Response("Filename must be .PNG, .JPEG, or .GIF", status=201, mimetype='application/json')
         
         if extension in ["JPG", "JPEG"]:
             img = img[len(JPG_START):]
 
         elif extension == "PNG":
             img = img[len(PNG_START):]
+
+        elif extension == "GIF":
+            img = img[len(GIF_START):]
 
         img_bytes = base64.b64decode(img)
 
@@ -87,14 +90,16 @@ def upload_image():
     # Send response back with image information
     return_images = []
     for image_obj in file_objects:
-        return_images.append(
-            {
+        image_data = {
                 "name": image_obj.name,
                 "size": image_obj.size,
                 "dims": image_obj.dims,
-                "downsized": image_obj.resize(240)
-            } 
-        )
+            }
+        if image_obj.extension == ".GIF":
+            image_data["downsized"] = image_obj.first_frame
+        else:
+            image_data["downsized"] = image_obj.resize(240)
+        return_images.append(image_data)
         db.session.add(image_obj)
     db.session.commit()
 

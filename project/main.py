@@ -240,6 +240,42 @@ devlog:
     it was basically the same code as showing base64 images, except for things like getting the
     thumbnail requires me to get the first frame as a PNG and such.
     It's been a long night, 14.5 hours of coding today.
+    - Feedback, the selecting feels very natural so I'm proud of that.
+    - Oh yeah I also finished the file storage indicator its kind of slow but oh well
+    - Tomorrow I can work on some last settings if I can think of them
+        and about us.
+        Then the last things is ALBUMS. oh I dread it because I set myself out
+        to do image processing and colour coding but I have two days left rahhh
+    - Also should do profile picture and if I have time then email verificiation
+
+    03/08 18:55 - Added sliders to settings page.
+    The range of the slider is based on the number of options given in settings.json.
+    Added a scroll to top button for ease when having lots of files
+      - Added a rename file button to the context menu.
+        Only works if the file extension is the same as the original file.
+    If I wanted to redo the file loading it would be for the frontend to send
+    a request to the server for a certain amount of files, instead of the backend
+    just doing it. This is so that the page doesn't take 5 second to load, both
+    due to the time it takes to load the file thumbnails in and also for the 
+    client browser to load the images.
+
+    03/08 21:36 - Fleshed out most of the setting stuff and linking that with the pages.
+    Added dark page but its a bit jank. Should do the job for a bit tho
+    Had a problem before where if you uploaded a gif, it wouldn't be correct until the page was reloaded.
+    Just fixed up the uploadImage route and there you go
+    Also gifs do not show in file manager anymore
+    And updated some of the icons, delete -> archive
+    Added icons to the sidebar menu
+    GIFs are allowed to be uplaoded to the gallery.
+    Basically done the about us page with desriptions of the project and the process of making it.
+    Added a footer to the bottom of all of the pages which links to the about us page.
+    Last thing I have to do is albums IG
+        - Sharing photos?
+        - Image processing
+        - Colour coding
+        - Have to be able to name albums
+        - Dates for each of the albums
+        - Profile picture !!!!!!!!!!!!!
 """
 
 from flask import Blueprint, render_template, url_for, request, jsonify
@@ -289,7 +325,8 @@ def gallery():
     image_json = images.load(archived=None)
     # print([f"{key}: {value[:16]}..." for key, value in image_json.items()])
 
-    return render_template('gallery.html', images=image_json, pixelated=current_user.get_setting("imageQuality"))
+    user_settings = current_user.get_all_settings()
+    return render_template('gallery.html', images=image_json, user_settings=user_settings)
 
 @main.route('/file_manager', methods=["GET"])
 @login_required
@@ -315,11 +352,6 @@ def recently_deleted():
     user_settings = current_user.get_all_settings()
     return render_template("recently_deleted.html", files=files, user_settings=user_settings, ignore_highlighting=True)
 
-@main.route('/about_us', methods=["GET"])
-@login_required
+@main.route('/about', methods=["GET"])
 def about_us():
-    ...
-
-@main.route('/test', methods=["GET"])
-def test():
-    return render_template("test.html", ignore_highlighting=True)
+    return render_template("about_us.html")

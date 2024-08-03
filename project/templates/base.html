@@ -24,6 +24,7 @@
     <div id="contextMenu" class="context-menu">
         <ul>
             <li id="context-select" onclick="selectEvent();"><a href="#">Select</a></li>
+            <li id="context-rename" onclick="renameEvent();"><a href="#">Rename</a></li>
             <li id="context-copy" onclick="copyEvent();"><a href="#">Copy</a></li>
             <li id="context-paste" onclick="pasteEvent();"><a href="#" style="color: #414141;">Paste</a></li>
             <li id="context-delete" onclick="deleteEvent();"><a href="#">Delete</a></li>
@@ -37,29 +38,39 @@
                     <div id="sidebar-menu" state="closed">
                     <!-- <div id="navbarMenuHeroA" class="navbar-menu"> -->
                         <a href="{{ url_for('main.index') }}" class="sidebar-button">
+                            {% if current_user.is_authenticated %}
+                            <img src="{{ url_for('static', filename='icons/space.png') }}" />
+                            {% endif %}
                             Home
                         </a>
                         {% if current_user.is_authenticated %}
                         <a href="{{ url_for('main.profile') }}" class="sidebar-button">
+                            <img src="{{ url_for('static', filename='icons/space.png') }}" />
                             Profile
                         </a>
                         <!-- These routes need to be implemented -->
                         <a href="{{ url_for('main.all_files') }}" class="sidebar-button">
+                            <img src="{{ url_for('static', filename='icons/space.png') }}" />
                             All Files
                         </a>
                         <a href="{{ url_for('main.gallery') }}" class="sidebar-button">
+                            <img src="{{ url_for('static', filename='icons/gallery.png') }}" />
                             Gallery
                         </a>
                         <a href="{{ url_for('main.file_manager') }}" class="sidebar-button">
+                            <img src="{{ url_for('static', filename='icons/space.png') }}" />
                             File Manager
                         </a>
                         <a href="{{ url_for('main.albums') }}" class="sidebar-button">
+                            <img src="{{ url_for('static', filename='icons/albums.png') }}" />
                             Albums
                         </a>
                         <a href="{{ url_for('main.recently_deleted') }}" class="sidebar-button">
+                            <img src="{{ url_for('static', filename='icons/archive.png') }}" />
                             Recently Deleted
                         </a>
                         <a href="{{ url_for('main.about_us') }}" class="sidebar-button">
+                            <img src="{{ url_for('static', filename='icons/space.png') }}" />
                             About Us
                         </a>
                         {% endif %}
@@ -72,7 +83,8 @@
                         </a>
                         {% endif %}
                         {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('auth.logout') }}" class="sidebar-button">
+                        <a href="{{ url_for('auth.logout') }}" style="color: #ce002c;" class="sidebar-button">
+                            <img src="{{ url_for('static', filename='icons/logout.png') }}" />
                             Logout
                         </a>
                         {% endif %}
@@ -88,7 +100,23 @@
                {% endblock %}
             </div>
         </div>
+
+        <footer class="hero-footer">
+            <p>Storage Saver</p>
+            <p><a id="about-link" href="/about" style="color: #32476f;">About</a></p>
+        </footer>
     </section>
+    
+    <div id="scroll-top-container">
+        <img id="scroll-to-top" src="{{ url_for('static', filename='icons/scrollTop.png') }}" alt="Scroll Top" />
+    </div>
+
+    {% if user_settings %}
+    <script type="text/javascript">
+        baseLoadSettings(JSON.parse('{{ user_settings | tojson }}'));
+    </script>
+    {% endif %}
+
 </body>
 
 </html>

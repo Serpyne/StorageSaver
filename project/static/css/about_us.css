@@ -1,0 +1,13 @@
+section {
+    display: block;
+    padding-block: 1rem;
+    font-size: large;
+    font-weight: 400;
+}
+
+div.text {
+    background: #267b6c;
+    border-radius: 1rem;
+    border-style: inset;
+    padding: 2rem;
+}

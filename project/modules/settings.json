@@ -1,4 +1,6 @@
 {
-    "imageQuality": ["Image quality becomes blurry at low resolutions.", "Image quality becomes pixelated at low resolutions."],
-    "oneClickPreview": ["Previewing files is done by a preview button.", "Previewing files is done whenever a file is clicked."]
+    "oneClickPreview-switch": ["Previewing files is done by a preview button.", "Previewing files is done whenever a file is clicked."],
+    "darkMode-switch": ["Storage Saver is in light mode.", "Storage Saver is in dark mode."],
+    "imageQuality-switch": ["Image quality becomes blurry at low resolutions.", "Image quality becomes pixelated at low resolutions."],
+    "imageZoom-slider": ["Image zoom speed: Slow", "Image zoom speed: Medium", "Image zoom speed: Fast"]
 }

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/about_us.css') }}">
+{% endblock %}
+
+
+{% block content %}
+
+<h1 class="title">
+  About Us
+</h1>
+
+<div class="text">
+<section>
+  This application, suitably named <i>Storage Saver</i>, was a project for my VCE Units 3&4 class, Software Development.
+  It features a photo gallery which can view photos and animated GIF files (video files not yet supported!).
+  You can click on individual photos to view them, and comes with a zooming tool that I implemented from scratch.
+  You can then select photos by either right clicking them and clicking the <i>'select'</i> button, by shift-clicking the photos,
+  or by simply clicking the select button in the top right of each photo. Once you select a photo, the selection panel comes up
+  where more features are unlocked. These include selecting all photos, deselecting them, or archiving them to the recently deleted section.
+</section>
+
+<section>
+  The recently deleted page shows all of your archived files, not just limited to photos and GIFs. There, you can preview text files and images
+  in case you realise that you did not mean to archive a file, and as such, there is a button for restoring files from the archived section.
+  Otherwise, you can permanently delete files to free up space in your storage saver.
+</section>
+
+<section>
+  In the all files section, you get a overview of every file in your storage. This differs from the File Manager section where images are ommitted.
+  This provides a sleek workspace for sorting, renaming, copying and pasting files. File management is made simple with its selection tool.
+  It is different from typical file selection attributes, while still maintaining its main characteristics. This is because once files are selected,
+  a single click will not remove your selection. Instead, it requires you to click the deselect all button. Therefore, if you are managing lots of files at once,
+  there is little to no risk of losing your progress along the way.
+</section>
+
+<section>
+  If you are viewing code files in the file manager, there will be a code preview with the correct code formatting, all with coloured text and a scrollbar.
+  I have always had the issue of viewing files, where it would open in Notepad or the Python IDLE, when I just wanted to skim over it easily.
+  Opening a code file in visual studio also took a long time as it would open in a new window and such. When the code preview and files all side-by-side,
+  the file management workspace is eased of unnecessary conjestion, and the user is much happier.
+</section>
+
+<section>
+  The project was started towards the end of the middle-of-year holidays (Roughly around 13th of July), and I am finishing it up now on the 4th of August.
+  I have worked tirelessly, often times spending more than 5 hours per day just developing the website. It is still rough around the edges but fulfils the 
+  main objective which was to improve the normal, day-to-day file management experience for consumers.
+</section>
+</div>
+
+{% endblock %}
