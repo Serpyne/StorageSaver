@@ -276,6 +276,10 @@ devlog:
         - Have to be able to name albums
         - Dates for each of the albums
         - Profile picture !!!!!!!!!!!!!
+
+    = Pixelated images because viewwers on windows just blur it??
+    = Viewing code files was always hard with the tyypical things
+    = Images, documents, and zipped folders were always jumbled up together
 """
 
 from flask import Blueprint, render_template, url_for, request, jsonify
