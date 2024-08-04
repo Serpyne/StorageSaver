@@ -389,4 +389,6 @@ My Development Log:
     Removed the albums page as I feel like I am just going overboard so I stick with the required pages from my SRS.
 
     04/08 20:53 - Final revisions. Testing table and code screenshots almost done.
+
+    04/08 21:36 - SUBMITTED!
 """
