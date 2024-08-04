@@ -1,9 +1,12 @@
 """
 SQLAlchemy models which represent records within the database.
 
-Current models being:
-    User(id, email, password, name)
-    ByteChunk(id, value<bytes>)
+The database models being:
+    User(id, email<str>, password<str>, username<str>, settings<str>) -> relationship User.files to File model
+        - Represents a registered user and has their own index of files
+    File(id, name<str>, user<str>, value<bytes>, exif<str>, properties<str>)
+        - Stores the bytes representation of a file.
+        - Has methods for image preview and returning its base64 representation.
 """
 
 from flask import url_for
@@ -48,6 +51,8 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String, unique=True)
     settings = db.Column(db.String)
 
+    files = db.relationship("File", order_by="File.name") # Sort by user.name to perform binary search
+
     def change_setting(self, setting: str, value: str | int | bool | None) -> None:
         """
         Change setting to a value
@@ -83,9 +88,11 @@ class User(UserMixin, db.Model):
         return user_settings
     
 class File(db.Model):
+    __tablename__ = 'file'
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
-    user = db.Column(db.String)
+    user = db.Column(db.String, db.ForeignKey('user.username')) # ForeignKey defines the connection between User.files and a File object.
     value = db.Column(db.String)
     exif = db.Column(db.String)
     properties = db.Column(db.String)

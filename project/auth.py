@@ -1,5 +1,12 @@
 """
 Routes handling authentication of login and sign up of account, and logging out.
+    - Login routes for showing the login page or to check for login form data.
+    - Signup routes for showing the signup page or to check for signup form data.
+    - Respective change email or password POST routes, checking form data for the correct details.
+    - Change setting POST route to change one of the current user's settings to a given value. 
+    = Method to check if a string contains any character from list of characters.
+    = Method to validate a given password string.
+    = Method to validate a given email string.
 """
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
@@ -14,7 +21,15 @@ from string import ascii_uppercase, digits
 
 auth = Blueprint('auth', __name__)
 
-def contains_chars(chars: str, string: str) -> bool:
+def contains_chars(chars: list[str], string: str) -> bool:
+    """
+    Sequentially searches a string for a list of characters.
+    Takes in 'chars' as a list of single-length strings.
+    Takes in 'string'<str>
+
+    Returns True on the first search occurance
+    Returns False if not found.
+    """
     for char in chars:
         if char in string:
             return True
@@ -49,14 +64,32 @@ def verify_password(password: str) -> bool | list[str]:
     return messages
 
 def verify_email(email: str) -> bool | list[str]:
-    ...
+    """
+    Email must contain only one @ symbol.
+    """
+    messages = []
+    if email.split("@") < 2:
+        messages.append(f"Email must contain one @.")
+
+    if email.split("@") > 2:
+        messages.append(f"Email must contain only one @.")
+
+    if not messages:
+        return True
+    return messages
 
 @auth.route('/login')
 def login():
+    """
+    '/login' route, for user log in after account has been created.
+    """
     return render_template('login.html')
 
 @auth.route('/login', methods=['POST'])
 def login_post():
+    """
+    '/login' POST route, retrives form data and compares it with user stored data to validate login.
+    """
     email = request.form.get('email')
     password = request.form.get('password')
     remember_me = True if request.form.get('remember') else False
@@ -78,10 +111,16 @@ def login_post():
 
 @auth.route('/signup')
 def signup():
+    """
+    '/signup' route, where the user can register an account
+    """
     return render_template('signup.html')
 
 @auth.route('/signup', methods=['POST'])
 def signup_post():
+    """
+    '/signup' POST route, retrieves form data and checks if the account already exists.
+    """
     email = request.form.get('email')
     name = request.form.get('name')
     password = request.form.get('password')
@@ -109,12 +148,18 @@ def signup_post():
 @auth.route('/logout')
 @login_required
 def logout():
+    """
+    '/logout' route, logs out user if they are already logged in.
+    """
     logout_user()
     return redirect(url_for('main.index'))
 
 @auth.route('/changeEmail', methods=['POST'])
 @login_required
 def change_email():
+    """
+    '/changeEmail' POST route, retrives form data and validates if all details are correct.
+    """
     data = request.form.to_dict()
 
     old_email = data["old-email"]
@@ -150,6 +195,9 @@ def change_email():
 @auth.route('/changePassword', methods=['POST'])
 @login_required
 def change_password():
+    """
+    '/changePassowrd' POST route, retrives form data and validates if all details are correct.
+    """
     data = request.form.to_dict()
 
     old_password = data["old-password"]
@@ -189,6 +237,11 @@ def change_password():
 @auth.route('/changeSetting', methods=['POST'])
 @login_required
 def change_setting():
+    """
+    '/changeSetting' POST route, is called from the profile page and changes a given setting to a value.
+    Response code 304: Parameters 'setting' and/or 'value' are not given.
+    Response code 200: Setting change is successful. 
+    """
     data = json.loads(request.data)
 
     if ("setting" not in data or "value" not in data):
@@ -199,5 +252,7 @@ def change_setting():
 
     current_user.change_setting(setting, value)
     db.session.commit()
+
+    log(f"Updated {current_user.username}'s setting of {setting} to {value}.")
 
     return jsonify({"response": 200})

@@ -1,5 +1,7 @@
 """
 Routes handling image transfer for the gallery
+    - Uploading images
+    - Getting the image as a base64 representation of its data..
 """
 
 from flask import Blueprint, request, jsonify, Response
@@ -9,6 +11,7 @@ from .models import User, File
 from .models import JPG_START, PNG_START, DATE_FORMAT, GIF_START
 from . import db
 from .modules.functions import log
+from .modules.fileloader import FileLoader
 
 import json
 import base64
@@ -16,15 +19,21 @@ from datetime import datetime
 
 images = Blueprint('images', __name__)
 
-def contains_chars(chars: str, string: str) -> bool:
-    for char in chars:
-        if char in string:
-            return True
-    return False
-
 @images.route('/uploadImage', methods=['POST'])
 @login_required
 def upload_image():
+    """
+    '/uploadImage' route
+
+    Takes in request data 'images'<list> and 'overwrite'<bool>
+
+    Response code 200:
+        returns images as a dict/json.
+    Reponse code 201:
+        File(s) already exists (conflicting file names), returns the list of conflicting file names
+    Response code 202:
+        Wrong file format, must be .PNG, .JPEG, or .GIF.
+    """
     if request.method != "POST":
         return
 
@@ -47,7 +56,7 @@ def upload_image():
 
         if not extension:
             log("Wrong file format.")
-            return Response("Filename must be .PNG, .JPEG, or .GIF", status=201, mimetype='application/json')
+            return Response("Filename must be .PNG, .JPEG, or .GIF", status=202, mimetype='application/json')
         
         if extension in ["JPG", "JPEG"]:
             img = img[len(JPG_START):]
@@ -60,7 +69,8 @@ def upload_image():
 
         img_bytes = base64.b64decode(img)
 
-        image_object = File.query.filter_by(name=filename, user=user).first()
+        fileloader = FileLoader()
+        image_object = fileloader.search(name=filename, user=current_user)
         if image_object:
             if not overwrite:
                 # Check if the filename already exists, only if the overwrite option is False
@@ -76,7 +86,7 @@ def upload_image():
             image_object.set_property("date_uploaded", datetime.now().strftime(DATE_FORMAT))
             
         # Base64 File is sometimes rotated 90 degrees clockwise.
-        # Rotate it back if the orientation is that.
+        # Rotate it back if the orientation is 8.
         if image_object.orientation == 8:
             image_object.value = image_object.rotate_left()
 
@@ -113,6 +123,10 @@ def upload_image():
 @images.route('/getImage', methods=['POST'])
 @login_required
 def get_image():
+    """
+    '/getImage' route which responds with:
+        base64<string>, downsized<string>, metadata<string>
+    """
     data = json.loads(request.data)
     filename = data["name"]
     username = current_user.username

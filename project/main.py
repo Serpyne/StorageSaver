@@ -1,6 +1,80 @@
 """
-Provides web routes for the root, profile and gallery pages. 
+Provides web routes for all of the pages on the Storage Saver application.
+    - / (index)
+    - /profile
+    - /all
+    - /gallery
+    - /file_manager
+    - /recently_deleted
+    - /about
+"""
 
+from flask import Blueprint, render_template, url_for, request, jsonify
+from flask_login import login_required, current_user
+
+from .models import File, SETTINGS
+from .modules.fileloader import FileLoader
+from .modules.fileloader import FILES, IMAGES
+
+main = Blueprint('main', __name__)
+
+@main.route('/favicon.ico')
+def favicon():
+    return url_for("static", filename="icons/favicon.ico")
+
+@main.route('/')
+def index():
+    return render_template('index.html')
+
+@main.route('/profile')
+@login_required
+def profile():
+    user_settings = current_user.get_all_settings()
+    return render_template('profile.html', settings=SETTINGS, user_settings=user_settings)
+
+@main.route('/all', methods=["GET"])
+@login_required
+def all_files():
+    fileloader = FileLoader()    
+    files = fileloader.load_thumbnails()
+
+    user_settings = current_user.get_all_settings()
+    return render_template("all_files.html", files=files, user_settings=user_settings, ignore_highlighting=True)
+
+@main.route('/gallery', methods=["GET"])
+@login_required
+def gallery():
+    images = FileLoader()
+    image_json = images.load(archived=None)
+
+    user_settings = current_user.get_all_settings()
+    return render_template('gallery.html', images=image_json, user_settings=user_settings)
+
+@main.route('/file_manager', methods=["GET"])
+@login_required
+def file_manager():
+    images = FileLoader()
+    files = images.load_thumbnails(_type=FILES)
+
+    user_settings = current_user.get_all_settings()
+    return render_template("file_manager.html", files=files, user_settings=user_settings, ignore_highlighting=True)
+
+@main.route('/recently_deleted', methods=["GET"])
+@login_required
+def recently_deleted():
+    images = FileLoader()
+    files = images.load_thumbnails(archived=True)
+    
+    user_settings = current_user.get_all_settings()
+    return render_template("recently_deleted.html", files=files, user_settings=user_settings, ignore_highlighting=True)
+
+@main.route('/about', methods=["GET"])
+def about_us():
+    return render_template("about_us.html")
+
+
+
+"""
 My Development Log:
     13/07 17:00 - Initalised the full file structure for a flask
     web server. Virtual environment is added which allows
@@ -305,75 +379,11 @@ My Development Log:
      
     04/08 3:34 - Implemented quicksort into the file sorting.
     Also added a reverse function
-    Should look into adding binary search
+        - Should look into adding binary search *
     Also changed 'decoding' to 'preview' and fixed some other issues with uploading.
+
+    04/08 15:36 - Added the rest of the internal documentation and header comments to the web POST routes.
+    Added binary search to replace all file querying. Since I've moved a global file database into several relational
+    database (one for each user), file querying appears to be faster-?
+    Removed the albums page as I feel like I am just going overboard so I stick with the required pages from my SRS.
 """
-
-from flask import Blueprint, render_template, url_for, request, jsonify
-from flask_login import login_required, current_user
-
-from .models import File, SETTINGS
-from .modules.fileloader import FileLoader
-from .modules.fileloader import FILES, IMAGES
-
-main = Blueprint('main', __name__)
-
-@main.route('/favicon.ico')
-def favicon():
-    return url_for("static", filename="icons/favicon.ico")
-
-@main.route('/')
-def index():
-    return render_template('index.html')
-
-@main.route('/profile')
-@login_required
-def profile():
-    user_settings = current_user.get_all_settings()
-    return render_template('profile.html', settings=SETTINGS, user_settings=user_settings)
-
-@main.route('/all', methods=["GET"])
-@login_required
-def all_files():
-    images = FileLoader()
-    files = images.load_thumbnails()
-
-    user_settings = current_user.get_all_settings()
-    return render_template("all_files.html", files=files, user_settings=user_settings, ignore_highlighting=True)
-
-@main.route('/gallery', methods=["GET"])
-@login_required
-def gallery():
-    images = FileLoader()
-    image_json = images.load(archived=None)
-
-    user_settings = current_user.get_all_settings()
-    return render_template('gallery.html', images=image_json, user_settings=user_settings)
-
-@main.route('/file_manager', methods=["GET"])
-@login_required
-def file_manager():
-    images = FileLoader()
-    files = images.load_thumbnails(_type=FILES)
-
-    user_settings = current_user.get_all_settings()
-    return render_template("file_manager.html", files=files, user_settings=user_settings, ignore_highlighting=True)
-
-
-@main.route('/albums', methods=["GET"])
-@login_required
-def albums():
-    ...
-
-@main.route('/recently_deleted', methods=["GET"])
-@login_required
-def recently_deleted():
-    images = FileLoader()
-    files = images.load_thumbnails(archived=True)
-    
-    user_settings = current_user.get_all_settings()
-    return render_template("recently_deleted.html", files=files, user_settings=user_settings, ignore_highlighting=True)
-
-@main.route('/about', methods=["GET"])
-def about_us():
-    return render_template("about_us.html")

@@ -1,5 +1,14 @@
 """
 Routes handling file management
+    - Uploading
+    - Get the file data as a base64 representation
+    - Create a duplicate of an existing file
+    - Renaming
+    - Archiving
+    - Restoration of archived files
+    - Permanent deletion
+    = Retrieving total file storage that is taken up, in bytes.
+    = Retrieving all valid file extensions
 """
 
 from flask import Blueprint, request, jsonify, Response
@@ -24,6 +33,15 @@ files = Blueprint('files', __name__)
 @files.route('/uploadFile', methods=['POST'])
 @login_required
 def upload_file():
+    """
+    '/uploadFile' route, uploads a given file to the database, with its date uploaded as a file property.
+
+    Takes in 'name'<string>, 'value'(base64)<string>, 'overwrite'<bool> and 'allowImages'<bool'.
+
+    Response code 201: File with the same name exists
+    Response code 300: Parameter allowImages is false but the file's type is an image.
+    Response code 200: Returns the file thumbnail as a base64 string of its 32x32 image thumbnail.
+    """
     data = json.loads(request.data)
     name = data["name"]
     value = data["value"]
@@ -33,7 +51,9 @@ def upload_file():
 
     allow_images = bool("allowImages" in data)
 
-    same_file = File.query.filter_by(name=name, user=user).first()
+    fileloader = FileLoader()
+    same_file = fileloader.search(name=name, user=current_user)
+    # same_file = File.query.filter_by(name=name, user=user).first()
     if same_file:
         if not overwrite:
             # Send back overwrite requests
@@ -48,10 +68,11 @@ def upload_file():
     new_file.set_property("date_uploaded", datetime.now().strftime(DATE_FORMAT))
     
     # If file is an image file, reject it.
-    if new_file.extension in [".JPEG", ".JPG", ".PNG"] and not allow_images:
+    if new_file.extension in [".JPEG", ".JPG", ".PNG", ".GIF"] and not allow_images:
         return jsonify({"response": 300})
 
-    db.session.add(new_file)
+    # db.session.add(new_file)
+    current_user.files.append(new_file)
     db.session.commit()
 
     images = FileLoader()
@@ -63,11 +84,24 @@ def upload_file():
 @files.route('/getFile', methods=['POST'])
 @login_required
 def get_file():
+    """
+    '/getFile' route, returns the base64 representation of the image for web usage, along with its file type.
+
+    Takes in 'name'<string> and 'whole'<data>;
+    if whole is true, then the route with respond with the entire base64 encoded representation of the file data.
+
+    Response code 204: File name is not given
+    Response code 202: File does not exist in database
+    Response code 200:
+        Returns the file data as a string in base64 or just plain text
+        Also returns the file type: [gif, image, text, code]
+    """
     data = json.loads(request.data)
     if "name" not in data:
         return jsonify({"response": 204})
 
-    file = File.query.filter_by(name=data["name"], user=current_user.username).first()
+    fileloader = FileLoader()
+    file = fileloader.search(name=data["name"], user=current_user)
     if not file:
         return jsonify({"response": 202})
 
@@ -100,20 +134,32 @@ def get_file():
 @files.route('/copyFile', methods=['POST'])
 @login_required
 def copy_file():
+    """
+    '/copyFile' route, creates a duplicate of a given file.
+    If overwrite parameter is enabled, ignores the file query conditions.
+
+    Takes in 'name'<string> of file to duplicate and 'overwrite'<bool>.
+
+    Response code 204: File name not given
+    Response code 202: File does not exist in database
+    Response code 300: File with name of copied item exists, returns the name of the duplicate file.
+    Response code 200: File duplication successfull, returns the name of the duplicate file.
+    """
     data = json.loads(request.data)
     if "name" not in data:
         return jsonify({"response": 204})
 
     overwrite = bool("overwrite" in data)
 
-    file = File.query.filter_by(name=data["name"], user=current_user.username).first()
+    fileloader = FileLoader()
+    file = fileloader.search(name=data["name"], user=current_user)
     if not file:
         return jsonify({"response": 202})
 
     split_name = data["name"].split(".")
     new_name = ".".join(split_name[:-1]) + " - Copy." + split_name[-1]
 
-    same_file = File.query.filter_by(name=new_name, user=current_user.username).first()
+    same_file = fileloader.search(name=new_name, user=current_user)
     if same_file:
         if not overwrite:
             return jsonify({"response": 300, "name": new_name})
@@ -136,11 +182,18 @@ def copy_file():
 @files.route('/archiveFiles', methods=['POST'])
 @login_required
 def archive_files():
+    """
+    '/archiveFiles' route, archives a list of given files.
+
+    Takes in a list of file names as strings.
+
+    Response code 200: Successful archival.
+    """
     data = json.loads(request.data)
 
-    user = current_user.username
+    fileloader = FileLoader()
     for filename in data["images"]:
-        file = File.query.filter_by(name=filename, user=user).first()
+        file = fileloader.search(name=filename, user=current_user)
         file.set_property("archived", 1)
     db.session.commit()
 
@@ -149,11 +202,18 @@ def archive_files():
 @files.route('/restoreFiles', methods=['POST'])
 @login_required
 def restore_files():
-    files = json.loads(request.data)
-    user = current_user.username
+    """
+    '/restoreFiles' route, restores/unarchives a list of given files.
 
+    Takes in a list of file names as strings.
+
+    Response code 200: Successful restoration.
+    """
+    files = json.loads(request.data)
+
+    fileloader = FileLoader()
     for filename in files:
-        file = File.query.filter_by(name=filename, user=user).first()
+        file = fileloader.search(name=filename, user=current_user)
         file.remove_property("archived")
     db.session.commit()
 
@@ -162,11 +222,18 @@ def restore_files():
 @files.route('/deleteFiles', methods=['POST'])
 @login_required
 def delete_files():
-    files = json.loads(request.data)
-    user = current_user.username
+    """
+    '/deleteFiles' route, permanently deletes a list of given files.
 
+    Takes in a list of file names as strings.
+
+    Response code 200: Successful deletion.
+    """
+    files = json.loads(request.data)
+
+    fileloader = FileLoader()
     for filename in files:
-        file = File.query.filter_by(name=filename, user=user).first()
+        file = fileloader.search(name=filename, user=current_user)
         db.session.delete(file)
     db.session.commit()
 
@@ -175,6 +242,21 @@ def delete_files():
 @files.route('/downloadFiles', methods=['POST'])
 @login_required
 def download_files():
+    """
+    '/downloadFiles' route, creates a zipped folder with given files and returns the path of the folder to the user.
+    Thus redirecting the user to the download page.
+
+    Takes in either a list of file names to be downloaded
+    Or if 'path' is a key of the request data, then it will delete the zip file, suggesting that the downloading process is complete.
+
+    First download request:
+        Response code 304: One or more request files does not exist.
+        Response code 200: Responds with the path of the zipped folder.
+
+    Upon download completion:
+        Response code 401: Invalid zip
+        Response code 200: Zip file has been deleted.
+    """
     data = json.loads(request.data)
     
     if "path" in data:
@@ -192,8 +274,9 @@ def download_files():
         return Response("File deleted.", status=200, mimetype='application/json')
 
     files = {}
+    fileloader = FileLoader()
     for name in data:
-        file = File.query.filter_by(name=name, user=current_user.username).first()
+        file = fileloader.search(name=name, user=current_user)
         if file:
             files[name] = file.value
         else:
@@ -218,7 +301,14 @@ def download_files():
 @files.route('/getFileStorage', methods=['POST'])
 @login_required
 def get_file_storage():
-    files = File.query.filter_by(user=current_user.username).all()
+    """
+    '/getFileStorage' route, returns the total file storage in bytes.
+
+    Response code 200:
+        Returns the total file storage taken up in bytes.
+    """
+
+    files = current_user.files
     size = sum([file.size for file in files])
 
     return jsonify({"response": 200, "size": size})
@@ -226,6 +316,10 @@ def get_file_storage():
 @files.route('/getExtensions', methods=['POST'])
 @login_required
 def get_valid_extensions():
+    """
+    '/getExtensions' route, returns the list of valid extensions
+    For e.g. ["PNG", "JPEG", ..., "TXT", "DOCX"]
+    """
     with open(join(dirname(__file__), "modules/types.json")) as f:
         data = json.load(f)
         extensions = list(data.keys())
@@ -237,14 +331,25 @@ def get_valid_extensions():
 @files.route('/renameFile', methods=['POST'])
 @login_required
 def rename_file():
+    """
+    '/renameFile' route
+
+    Takes in request body data
+        'originalName'<string>
+        'newName'<string>
+
+    Response code 200:
+        Request was made succesfully
+    Response code 300:
+        File not found error.
+    """
     data = json.loads(request.data)
 
     original_name = data["originalName"]
     new_name = data["newName"]
 
-    user = current_user.username
-
-    file = File.query.filter_by(name=original_name, user=user).first()
+    fileloader = FileLoader()
+    file = fileloader.search(name=original_name, user=current_user)
     if not file:
         return jsonify({"response": 300})
     

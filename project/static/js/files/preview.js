@@ -67,6 +67,9 @@ function previewFile() {
         })
         .then(response => response.json())
         .then(data => {
+            if (data.response !== 200)
+                return;
+
             let file = data.file;
             
             // Show previewFrame and remove all previous elements shown
