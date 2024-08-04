@@ -13,17 +13,20 @@
 
     - This is the format of the models within the respective tables:
 ```
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(100))
-    username = db.Column(db.String(1000), unique=True)
+User:
+    id: integer (primary key)
+    email: string (unique)
+    password: string
+    username: string (unique)
+    settings: string-json
 
-class Image(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    user = db.Column(db.String)
-    value: bytes = db.Column(db.String)
+File:
+    id: integer (primary key)
+    name: string
+    user: string
+    value: bytes
+    exif: string-json
+    properties: string-json
 ```
 - Create a file named **.env** in the root directory with three variables:
 ```
