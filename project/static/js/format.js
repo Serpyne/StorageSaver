@@ -38,3 +38,4 @@ function formatTime(/*string*/dateString) {
     let formattedDate = new Date(Date.parse(dateString));
     return formattedDate.toTimeString();
 }
+

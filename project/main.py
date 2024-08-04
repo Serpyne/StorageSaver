@@ -12,9 +12,9 @@ Provides web routes for all of the pages on the Storage Saver application.
 from flask import Blueprint, render_template, url_for, request, jsonify
 from flask_login import login_required, current_user
 
-from .models import File, SETTINGS
+from .models import SETTINGS
 from .modules.fileloader import FileLoader
-from .modules.fileloader import FILES, IMAGES
+from .modules.fileloader import FILES
 
 main = Blueprint('main', __name__)
 
@@ -90,7 +90,7 @@ My Development Log:
 
     18/07 12:30 - Completed login and sign-up pages with authorisation
     capabilites. If a user is logged in, the profile navigation button
-    is shown. However, if the user is not loggin in, the login and
+    is shown. However, if the user is not logged in, the login and
     sign-up buttons are shown instead. 
 
     19/07 20:30 - Created verify_password function which returns a list
@@ -233,7 +233,8 @@ My Development Log:
         - Calculate total file storage
         - Overwriting does not rely on archived files
             - Either overwrite file in recently deleted (what is being done now)
-            - Or allow both versions to work but put overwrite prompt if file with same name is being restored.
+            - Or allow both versions to work but put overwrite prompt if file with
+                same name is being restored.
         - Start all files
         * Do about us if getting very tired.
 
@@ -265,7 +266,7 @@ My Development Log:
         -> After that do file storage calculation.
         -> Then context menu *
 
-    Ever just put a semicolon after the initilaisation of a for loop. Yeah it doesnt throw an error so youre searching and searching and theres just nothing there
+    Ever just put a semicolon after the initialisation of a for loop. Yeah it doesnt throw an error so youre searching and searching and theres just nothing there
 
     02/08 14:44 - The user can now download files within zip files. This is done from the backend,
     the name of the zip file is a 5-character long random string with the hash function applied.
@@ -386,4 +387,6 @@ My Development Log:
     Added binary search to replace all file querying. Since I've moved a global file database into several relational
     database (one for each user), file querying appears to be faster-?
     Removed the albums page as I feel like I am just going overboard so I stick with the required pages from my SRS.
+
+    04/08 20:53 - Final revisions. Testing table and code screenshots almost done.
 """

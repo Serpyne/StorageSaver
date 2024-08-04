@@ -407,7 +407,7 @@ function downloadFiles() {
 function keyLinearSearch(/*json*/searchItem, /*array*/array, /*string*/key) {
     /*
     Searches for an item in an array sequentially based on a given key.
-    Returns true once the first occurance of the item has been found.
+    Returns true once the first occurrence  of the item has been found.
     Else, returns false.
     */
     

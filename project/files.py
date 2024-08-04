@@ -293,6 +293,7 @@ def download_files():
                 f.write(files[name])
                 f.close()
         zf.close()
+    print(5)
 
     log(f"Zip file downloaded, number of files: {len(files)}")
 

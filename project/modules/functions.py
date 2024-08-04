@@ -7,13 +7,7 @@ from string import ascii_lowercase, ascii_uppercase
 from random import choice
 import base64
 
-def quick_sort():
-    ...
-
-def binary_search():
-    ...
-
-def bitshift_hash(value: str):
+def bitshift_hash(value: str) -> str:
     """
     Hashes a string into a unique key string.
 
@@ -24,8 +18,8 @@ def bitshift_hash(value: str):
     and the '0x' prefix is stripped.
     Finally the string is returned.
 
-    {Input: string}
-    {Output: hashed<str>}
+    Takes in a value<string> to be hashed.
+    Returns the hashed value as a string.
     """
     result = 0
     for char in value:
@@ -35,10 +29,23 @@ def bitshift_hash(value: str):
     hashed = hex(int(hashed))[2:]
     return hashed
 
-def encrypt(value: str):
+def encrypt(value: str) -> bytes:
+    """
+    Encrypts a string to bytes then converts it to base64.
+
+    Takes in a value<string> to be encrypted.
+    Returns the encrypted value as bytes.
+    """
     return base64.b64encode(value.encode("utf-8"))
 
-def decrypt(value: str):
+def decrypt(value: bytes) -> str:
+    """
+    Decrypts a value to string by converting it
+    from base64 to bytes, then decoding it to a string.
+
+    Takes in a value<bytes>
+    Returns the decrypted value as a string.
+    """
     return base64.b64decode(value).decode("utf-8")
 
 def log(text, filename = ".log", include_datetime=True):

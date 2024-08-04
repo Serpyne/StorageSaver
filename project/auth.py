@@ -24,15 +24,20 @@ auth = Blueprint('auth', __name__)
 def contains_chars(chars: list[str], string: str) -> bool:
     """
     Sequentially searches a string for a list of characters.
+    => Only one of the given characters needs to occur for the method to return True.
+
     Takes in 'chars' as a list of single-length strings.
     Takes in 'string'<str>
 
-    Returns True on the first search occurance
+    Returns True on the first occurrence  of a char
     Returns False if not found.
     """
     for char in chars:
-        if char in string:
-            return True
+        i = 0
+        while i < len(string):
+            if string[i] == char:
+                return True
+            i += 1
     return False
 
 MIN_CHARS = 8
@@ -40,8 +45,14 @@ MAX_CHARS = 25
 SPECIAL_CHARS = "!@#$%^&*_-+=/?"
 def verify_password(password: str) -> bool | list[str]:
     """
-    Password length must be between 3 and 25 chars long.
-    Password must contain one uppercase char, a number, and one special char.
+    Checks a password string for the correct password criteria.
+    If all of the checks are passed, then it returns True.
+    If at least one check is not passed,
+    then it will return a list of string(s) with the criteria that need to be fulfilled.
+
+    Criteria:
+        Password length must be between 8 and 25 chars long.
+        Password must contain one uppercase char, a number, and one special char.
     """
     messages = []
     if len(password) < MIN_CHARS:

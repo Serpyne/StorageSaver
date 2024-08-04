@@ -104,17 +104,18 @@ class FileLoader:
             
         return self.images
 
-    def _binary_search(self, files: list[File], filenames: list[str], name: str, low_index: int, high_index: int):
+    def _binary_search(self, filenames: list[str], name: str, low_index: int, high_index: int):
         """
         Recursively accesses the middle value of a list of filenames and compares it with the name that is being searched,
         until the name is either found, in which case the method returns the index of the name,
         or returns None if the name is not found.
 
-        Takes in a list of File objects, a list of their file names in the same order,
+        Takes in a list of file names in the same order as the original files list,
         the name that is being searched, and the lower and highest indices of the lists.
 
         Returns None or <int>
         """
+        # print(filenames[low_index:high_index], name, low_index, high_index)
         if low_index > high_index:
             return None
         else:
@@ -124,24 +125,24 @@ class FileLoader:
                 return middle_index
             
             elif name > filenames[middle_index]:
-                return self._binary_search(files, filenames, name, middle_index + 1, high_index)
+                return self._binary_search(filenames, name, middle_index + 1, high_index)
             
             else:
-                return self._binary_search(files, filenames, name, low_index, middle_index - 1)
+                return self._binary_search(filenames, name, low_index, middle_index - 1)
         
     def search(self, name: str, user: User):
         """
         Searches the given user's files for a file name using the binary search algorithm [O(log n)].
-        The file name given is NOT case-sensitive
+        The file name given is case-sensitive
         
         Takes in the file name as a string, and a user which must be a User object (found in models.py).
 
         Returns the File object if found, and returns None if the file is not found.
         """
         files = user.files.copy()
-        filenames = [file.name.lower() for file in files]
+        filenames = [file.name for file in files]
 
-        file_index = self._binary_search(files, filenames, name.lower(), 0, len(filenames) - 1)
+        file_index = self._binary_search(filenames, name, 0, len(filenames) - 1)
 
         if file_index == None:
             return None

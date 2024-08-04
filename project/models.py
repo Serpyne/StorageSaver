@@ -9,11 +9,10 @@ The database models being:
         - Has methods for image preview and returning its base64 representation.
 """
 
-from flask import url_for
 from flask_login import UserMixin
 from . import db
 from io import BytesIO
-from base64 import b64encode, b64decode
+from base64 import b64encode
 from datetime import datetime
 from .modules.functions import decrypt, encrypt
 
@@ -321,7 +320,7 @@ class File(db.Model):
     def deprecated_rotate_left(self) -> bytes:
         """
         Deprecated as the nested for loops was too slow.
-        Rotates the image 90 degrees anti-clockwise. Returns a Byte
+        Rotates the image 90 degrees anti-clockwise. Returns a Byte array
         """
         w, h = self.dims
 
